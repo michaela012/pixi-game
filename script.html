@@ -21,7 +21,7 @@
 
   //Create a Pixi Application
   let app = new PIXI.Application({ 
-      width: 500, 
+      width: 400, 
       height: 400,                       
       antialias: true, 
       transparent: false, 
@@ -37,7 +37,10 @@
     .load(setup);
 
   //define vars
-  let p1, state, playerSprites, p1WalkTextures;
+  let p1, p2, state, playerSprites, p1Textures, p2Textures;
+  let p1Jumped = false;
+
+
 
   //handle keyboard input
   function keyboard(value){
@@ -88,6 +91,56 @@
     return key;
   }
 
+  function hitTestRectangle(r1, r2) {
+    //Define the variables we'll need to calculate
+    let hit, combinedHalfWidths, combinedHalfHeights, vx, vy;
+
+    //hit will determine whether there's a collision
+    hit = false;
+
+    //Find the center points of each sprite
+    r1.centerX = r1.x + r1.width / 2;
+    r1.centerY = r1.y + r1.height / 2;
+    r2.centerX = r2.x + r2.width / 2;
+    r2.centerY = r2.y + r2.height / 2;
+
+    //Find the half-widths and half-heights of each sprite
+    r1.halfWidth = r1.width / 2;
+    r1.halfHeight = r1.height / 2;
+    r2.halfWidth = r2.width / 2;
+    r2.halfHeight = r2.height / 2;
+
+    //Calculate the distance vector between the sprites
+    vx = r1.centerX - r2.centerX;
+    vy = r1.centerY - r2.centerY;
+
+    //Figure out the combined half-widths and half-heights
+    combinedHalfWidths = r1.halfWidth + r2.halfWidth;
+    combinedHalfHeights = r1.halfHeight + r2.halfHeight;
+
+    //Check for a collision on the x axis
+    if (Math.abs(vx) < combinedHalfWidths) {
+
+      //A collision might be occurring. Check for a collision on the y axis
+      if (Math.abs(vy) < combinedHalfHeights) {
+
+        //There's definitely a collision happening
+        hit = true;
+      } else {
+
+        //There's no collision on the y axis
+        hit = false;
+      }
+    } else {
+
+      //There's no collision on the x axis
+      hit = false;
+    }
+
+    //`hit` will be either `true` or `false`
+    return hit;
+  };
+
 
   //This `setup` function will run when the image has loaded
   function setup() {
@@ -106,14 +159,14 @@
       p2WalkTextures[i] = PIXI.Texture.from(animations.p2_walk[i]);
     }
 
-    let p1Textures= {"walkTextures" : p1WalkTextures, 
+    p1Textures= {"walkTextures" : p1WalkTextures, 
       "duck": PIXI.Texture.from("p1_duck.png"), 
       "front": PIXI.Texture.from("p1_front.png"), 
       "hurt": PIXI.Texture.from("p1_hurt.png"), 
       "jump": PIXI.Texture.from("p1_jump.png"), 
       "stand": PIXI.Texture.from("p1_stand.png")};
 
-    let p2Textures= {"walkTextures" : p2WalkTextures, 
+    p2Textures= {"walkTextures" : p2WalkTextures, 
       "duck": PIXI.Texture.from("p2_duck.png"), 
       "front": PIXI.Texture.from("p2_front.png"), 
       "hurt": PIXI.Texture.from("p2_hurt.png"), 
@@ -127,16 +180,26 @@
     let spriteScaleHeight = spriteScale + (spriteScale*.2);
 
     //make sprites
+    // p1
     p1 = new Sprite(p1Textures.front);
     p1.height = spriteScaleHeight;
     p1.width = spriteScale;
-    p1.y = app.screen.height / 2 - p1.height/2;
+    p1.y = app.screen.height /1.5 - p1.height/2;
     p1.x=100;
     p1.vx = 0;
     p1.vy = 0;
+    // p2
+    p2 = new Sprite(p2Textures.front);
+    p2.height = spriteScaleHeight;
+    p2.width = spriteScale;
+    p2.y = app.screen.height / 2 - p2.height/2;
+    p2.x=100;
+    p2.vx = 0;
+    p2.vy = 0;
 
     //Add elements to stage
     app.stage.addChild(p1);
+    app.stage.addChild(p2);
     
 
     //listen for keyboard input
@@ -149,8 +212,7 @@
     // left
     left.press = () => {
       p1.vx = -1;
-      p1.texture = p1Textures.walkTextures[0];
-      p1.texture.rotate = 12;
+      p1.height = spriteScaleHeight;
     }
     left.release = () => {
       p1.vx = 0;
@@ -161,8 +223,7 @@
     //right
     right.press = () => {
       p1.vx = 1;
-      p1.texture = p1WalkTextures[0];
-      p1.texture.rotate = 0;
+      p1.height = spriteScaleHeight;
     }
     right.release = () => {
       p1.vx = 0;
@@ -173,16 +234,17 @@
     //up
     up.press = () => {
       p1.vy = -1;
-      p1.texture = p1Textures.jump;
+      p1Jumped = true;
     }
     up.release = () => {
       p1.vy = 0;
       p1.texture = p1Textures.stand;
+      p1Jumped = false;
     }
 
     //down
     down.press = () => {
-      p1.vy = 1;
+      p1.vy = 0;
       p1.height = spriteScale;
       p1.texture = p1Textures.duck;
     }
@@ -190,9 +252,7 @@
       p1.vy = 0;
       p1.height = spriteScaleHeight;
       p1.texture = p1WalkTextures[1];
-
     }
-
 
 
     //set game state
@@ -201,14 +261,51 @@
     app.ticker.add(delta => gameLoop(delta));
   }
 
+
   function gameLoop(delta) {
     state(delta);
   }
+
 
   function play(delta){
     //Move player
     p1.x += p1.vx;
     p1.y += p1.vy;
+
+    //test collision
+    if (hitTestRectangle(p1, p2)){
+      console.log("hit!");
+    }
+
+    //assign textures
+    // up
+    if (p1.vy === -1 && p1.vx === 0){
+      p1.texture = p1Textures.jump;
+    }
+    //right
+    if (p1.vx === 1){
+      if (p1.vy === -1){    //if jumping
+        p1.texture = p1Textures.jump;
+        p1.texture.rotate = 0;
+      }
+      else {    //not jumping
+        let cycle = Math.floor(Date.now() / 100) % 4;
+        p1.texture = p1Textures.walkTextures[cycle];
+        p1.texture.rotate = 0;
+      }
+    }
+    // left
+    else if (p1.vx === -1){
+      if (p1.vy === -1){
+        p1.texture = p1Textures.jump;
+        p1.texture.rotate = 12;
+      }
+      else {
+        let cycle = Math.floor(Date.now() / 100) % 4;
+        p1.texture = p1Textures.walkTextures[cycle];
+        p1.texture.rotate = 12;
+      }
+    }
 
   }
 
