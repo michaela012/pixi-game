@@ -17,12 +17,14 @@
   //Aliases
   let Loader = PIXI.Loader;
   let Sprite = PIXI.Sprite;
+  let Application = PIXI.Application;
+  let Texture = PIXI.Texture;
 
 
   //Create a Pixi Application
-  let app = new PIXI.Application({ 
-      width: 400, 
-      height: 400,                       
+  let app = new Application({ 
+      width: 500, 
+      height: 350,                       
       antialias: true, 
       transparent: false, 
       resolution: 1
@@ -30,15 +32,19 @@
   );
   //Add the canvas that Pixi automatically created for you to the HTML document
   document.body.appendChild(app.view);
+  app.view.focus();
 
   //load spritesheets and run `setup` function
   Loader.shared
     .add("Spritesheets/playerSprites.json")
+    .add("Spritesheets/tiles.json")
+    .add("Spritesheets/backgrounds/bg.png")
     .load(setup);
 
   //define vars
-  let p1, p2, state, playerSprites, p1Textures, p2Textures;
-  let p1Jumped = false;
+  let p1, p2, ground, state, playerSprites, p1Textures, p2Textures, spriteScale;
+  let groundTop; 
+  let left, right, up, down;
 
 
 
@@ -74,13 +80,17 @@
     //Attach event listeners
     const downListener = key.downHandler.bind(key);
     const upListener = key.upHandler.bind(key);
+
+    key.subscribe = () => {
+      window.addEventListener(
+        "keydown", downListener, false
+      );
+      window.addEventListener(
+        "keyup", upListener, true
+      );
+    }
     
-    window.addEventListener(
-      "keydown", downListener, false
-    );
-    window.addEventListener(
-      "keyup", upListener, false
-    );
+
     
     // Detach event listeners
     key.unsubscribe = () => {
@@ -91,7 +101,7 @@
     return key;
   }
 
-  function hitTestRectangle(r1, r2) {
+  function testCollision(r1, r2) {
     //Define the variables we'll need to calculate
     let hit, combinedHalfWidths, combinedHalfHeights, vx, vy;
 
@@ -155,28 +165,28 @@
     };
 
     for (i=0; i <= 10; i++){
-      p1WalkTextures[i] = PIXI.Texture.from(animations.p1_walk[i]);
-      p2WalkTextures[i] = PIXI.Texture.from(animations.p2_walk[i]);
+      p1WalkTextures[i] = Texture.from(animations.p1_walk[i]);
+      p2WalkTextures[i] = Texture.from(animations.p2_walk[i]);
     }
 
     p1Textures= {"walkTextures" : p1WalkTextures, 
-      "duck": PIXI.Texture.from("p1_duck.png"), 
-      "front": PIXI.Texture.from("p1_front.png"), 
-      "hurt": PIXI.Texture.from("p1_hurt.png"), 
-      "jump": PIXI.Texture.from("p1_jump.png"), 
-      "stand": PIXI.Texture.from("p1_stand.png")};
+      "duck": Texture.from("p1_duck.png"), 
+      "front": Texture.from("p1_front.png"), 
+      "hurt": Texture.from("p1_hurt.png"), 
+      "jump": Texture.from("p1_jump.png"), 
+      "stand": Texture.from("p1_stand.png")};
 
     p2Textures= {"walkTextures" : p2WalkTextures, 
-      "duck": PIXI.Texture.from("p2_duck.png"), 
-      "front": PIXI.Texture.from("p2_front.png"), 
-      "hurt": PIXI.Texture.from("p2_hurt.png"), 
-      "jump": PIXI.Texture.from("p2_jump.png"), 
-      "stand": PIXI.Texture.from("p2_stand.png")};
+      "duck": Texture.from("p2_duck.png"), 
+      "front": Texture.from("p2_front.png"), 
+      "hurt": Texture.from("p2_hurt.png"), 
+      "jump": Texture.from("p2_jump.png"), 
+      "stand": Texture.from("p2_stand.png")};
     
 
 
     //vars
-    let spriteScale = 40;
+    spriteScale = 40;
     let spriteScaleHeight = spriteScale + (spriteScale*.2);
 
     //make sprites
@@ -188,6 +198,8 @@
     p1.x=100;
     p1.vx = 0;
     p1.vy = 0;
+    p1.jumped = false;
+    p1.jumpHeight = null;
     // p2
     p2 = new Sprite(p2Textures.front);
     p2.height = spriteScaleHeight;
@@ -196,22 +208,52 @@
     p2.x=100;
     p2.vx = 0;
     p2.vy = 0;
+    p2.jumping = false;
+    p2.jumpHeight = null;
 
+    //make containers  
+    ground = new PIXI.Container();
+    for (i = 0; i < app.screen.width / spriteScale + 1; i++){
+      grass = new Sprite(Texture.from("grassMid.png"));
+      dirt = new Sprite(Texture.from("grassCenter.png"));
+      grass.height = grass.width = dirt.height = dirt.width = spriteScale;
+      grass.y = app.screen.height - (spriteScale*1.5);
+      dirt.y = app.screen.height - (spriteScale*.5);
+      grass.x = dirt.x = i * spriteScale;
+      ground.addChild(grass, dirt);
+    }
+    groundTop = app.screen.height - ground.height;
+
+    let bg = new Sprite(Loader.shared.resources["Spritesheets/backgrounds/bg.png"].texture);
+    //bg.x = 100, bg.y = 100;
+    bg.height = bg.width = 1000;
+
+    
+    
     //Add elements to stage
+    app.stage.addChild(bg);
+    app.stage.addChild(ground);
     app.stage.addChild(p1);
     app.stage.addChild(p2);
     
 
     //listen for keyboard input
-    let left = keyboard("ArrowLeft"),
-      right = keyboard("ArrowRight"),
-      up = keyboard("ArrowUp"),
-      down = keyboard("ArrowDown");
+    left = keyboard("ArrowLeft"),
+    right = keyboard("ArrowRight"),
+    up = keyboard("ArrowUp"),
+    down = keyboard("ArrowDown");
+
+    //start listening for keyboard input
+    left.subscribe();
+    right.subscribe();
+    down.subscribe();
+    up.subscribe();
     
+
     //key press and release methods
     // left
     left.press = () => {
-      p1.vx = -1;
+      p1.vx = -4;
       p1.height = spriteScaleHeight;
     }
     left.release = () => {
@@ -222,7 +264,7 @@
 
     //right
     right.press = () => {
-      p1.vx = 1;
+      p1.vx = 4;
       p1.height = spriteScaleHeight;
     }
     right.release = () => {
@@ -233,25 +275,32 @@
 
     //up
     up.press = () => {
-      p1.vy = -1;
-      p1Jumped = true;
-    }
-    up.release = () => {
-      p1.vy = 0;
-      p1.texture = p1Textures.stand;
-      p1Jumped = false;
+      p1.vy = -9;
+      p1.jumping = true;
+      p1.jumpHeight = p1.y - 3*spriteScale;
+      p1.hangtime = 12;
+      up.unsubscribe();
     }
 
     //down
     down.press = () => {
       p1.vy = 0;
-      p1.height = spriteScale;
+      p1.vx = 0;
+      p1.y = p1.y + spriteScale * .15;
+      p1.height = spriteScale * .9;
       p1.texture = p1Textures.duck;
+      left.unsubscribe();
+      right.unsubscribe();
+      up.unsubscribe();
     }
     down.release = () => {
       p1.vy = 0;
+      p1.y = p1.y - spriteScale * .1;
       p1.height = spriteScaleHeight;
       p1.texture = p1WalkTextures[1];
+      left.subscribe();
+      right.subscribe();
+      up.subscribe();
     }
 
 
@@ -273,39 +322,66 @@
     p1.y += p1.vy;
 
     //test collision
-    if (hitTestRectangle(p1, p2)){
-      console.log("hit!");
+    if (testCollision(p1, ground)){
+      //console.log("hit!");
+      //p1.vx = 0;
     }
 
-    //assign textures
-    // up
-    if (p1.vy === -1 && p1.vx === 0){
+    //jumping
+    if (p1.vy !== 0){
       p1.texture = p1Textures.jump;
-    }
-    //right
-    if (p1.vx === 1){
-      if (p1.vy === -1){    //if jumping
-        p1.texture = p1Textures.jump;
-        p1.texture.rotate = 0;
-      }
-      else {    //not jumping
-        let cycle = Math.floor(Date.now() / 100) % 4;
-        p1.texture = p1Textures.walkTextures[cycle];
-        p1.texture.rotate = 0;
-      }
-    }
-    // left
-    else if (p1.vx === -1){
-      if (p1.vy === -1){
-        p1.texture = p1Textures.jump;
+      if (p1.vx < 0){   //moving left
         p1.texture.rotate = 12;
       }
       else {
-        let cycle = Math.floor(Date.now() / 100) % 4;
-        p1.texture = p1Textures.walkTextures[cycle];
-        p1.texture.rotate = 12;
+        p1.texture.rotate = 0;
       }
     }
+    //walking
+    else if (p1.vx != 0){ 
+      let cycle = Math.floor(Date.now() / 100) % 4;
+      p1.texture = p1Textures.walkTextures[cycle];
+      //right
+      if (p1.vx > 0){
+        p1.texture.rotate = 0;
+      }
+      //left
+      else { 
+        p1.texture.rotate = 12;
+      }
+        
+    }
+
+    if (p1.jumping){
+      let playerBottom = p1.y + p1.height*.5;
+      if (p1.y <= p1.jumpHeight){
+        if (p1.hangtime === 0){
+          p1.jumpHeight = null;
+          p1.vy = 8;
+        }
+        else{
+          p1.hangtime -= 1;
+          if (p1.hangtime >= 6){
+            p1.vy = -1;
+          }
+          else{
+            p1.vy = 1;
+          }
+        } 
+      }
+      //test for collisions
+      else if (playerBottom >= groundTop){
+        p1.vy = 0;
+        p1.jumping = false;
+        p1.y = app.screen.height - ground.height - p1.height*.5;
+        p1.texture = p1Textures.stand;
+        up.subscribe();
+      }
+      
+    }
+
+
+
 
   }
 
