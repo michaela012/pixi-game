@@ -23,8 +23,8 @@
 
   //Create a Pixi Application
   let app = new Application({ 
-      width: 500, 
-      height: 350,                       
+      width: 250,
+      height: 500,
       antialias: true, 
       transparent: false, 
       resolution: 1
@@ -42,11 +42,9 @@
     .load(setup);
 
   //define vars
-  let p1, p2, ground, state, playerSprites, p1Textures, p2Textures, spriteScale;
-  let groundTop; 
+  let p1, p2, ground, state, p1Textures, p2Textures, spriteScale;
   let left, right, up, down;
   let platforms = new Array();
-
 
 
   //handle keyboard input
@@ -151,47 +149,21 @@
     //`hit` will be either `true` or `false`
     return hit;
   };
-
   function testLanding(player, surface){
-    //platforms is a list of all sprites that the player could land on
-
-    playerLeft = player.x - player.width;
-    playerBottom = player.y + player.height*.5;
-    playerRight = player.x + player.width;
-    playerTop = player.y - player.height*.5;
+    let playerBottom = player.y + player.height*.5;
 
     if (testCollision(player, surface)){
-      surfaceLeft = surface.x - surface.width*.5;
-      surfaceBottom = surface.y + surface.height*.5;
-      surfaceRight = surface.x + surface.width*.5;
-      surfaceTop = surface.y - surface.height*.5;
+      let surfaceTop = surface.y - surface.height*.5;
 
-      if (playerBottom >= surfaceTop && playerBottom <= surfaceTop + surfaceTop*.1){
+      if (playerBottom >= surfaceTop && playerBottom >= surfaceTop + 5){
         player.vy = 0;
         player.y = surfaceTop - player.height*.5;
         player.jumping = false;
         player.surfaceOn = surface;
         player.texture = p1Textures.stand;
         up.subscribe();
+        down.subscribe();
       }
-      else if (playerTop <= surfaceBottom && playerTop >= surfaceBottom - surfaceBottom*.1){
-        player.vy = 8;
-        player.y = surfaceBottom + player.height*.5;
-      }
-      else if (playerLeft <= surfaceRight && playerLeft >= surfaceRight - surfaceRight*.1){
-        console.log("right");
-        player.vy = 8;
-        player.x = surfaceRight + player.height*.6;
-      }
-      else if (playerRight <= surfaceLeft){
-        console.log("left");
-        player.vy = 8;
-        player.x = surfaceLeft - player.height*.6;
-      }
-
-      //player.x = playerRight;
-      
-
     }
     
   }
@@ -231,7 +203,7 @@
 
 
     //vars
-    spriteScale = 40;
+    spriteScale = 20;
     let spriteScaleHeight = spriteScale + (spriteScale*.2);
 
     //make sprites
@@ -241,50 +213,63 @@
     p1.width = spriteScale;
     p1.y = app.screen.height /1.5 - p1.height/2;
     p1.x=100;
+    p1._zIndex = 100000
     p1.vx = 0;
     p1.vy = 0;
     p1.surfaceOn = null;
     p1.jumped = false;
     p1.jumpHeight = null;
+    p1.top = p1.y - p1.height*.5;
+    p1.bottom = p1.y + p1.height*.5;
+    p1.left = p1.x - p1.width*.5;
+    p1.right = p1.x + p1.width*.5;
 
-    // platforms
-    platform = new Sprite(Texture.from("dirt.png"));
-    platform.height = spriteScale;//*.5;
-    platform.width = spriteScale;
-    platform.y = 150;
-    platform.x=100;
-    platform.vx = 0;
-    platform.vy = 0;
-
-    platforms.push(platform);
 
     //make containers  
     ground = new PIXI.Container();
+    ground.vy = .1;
     for (i = 0; i < app.screen.width / spriteScale + 1; i++){
       grass = new Sprite(Texture.from("grassMid.png"));
       dirt = new Sprite(Texture.from("grassCenter.png"));
       grass.height = grass.width = dirt.height = dirt.width = spriteScale;
-      grass.y = app.screen.height - (spriteScale*1.5);
-      dirt.y = app.screen.height - (spriteScale*.5);
+      //grass.y = app.screen.height - (spriteScale*1.5);
+      //dirt.y = app.screen.height - (spriteScale*.5);
+      dirt.y = ground.y + spriteScale-1;
       grass.x = dirt.x = i * spriteScale;
       ground.addChild(grass, dirt);
     }
-    groundTop = app.screen.height - ground.height;
+    ground.y = app.screen.height - spriteScale*1.5;
+    //groundTop = app.screen.height - ground.height;
 
     let bg = new Sprite(Loader.shared.resources["Spritesheets/backgrounds/bg.png"].texture);
     //bg.x = 100, bg.y = 100;
     bg.height = bg.width = 1000;
+
+
+    // platforms
+    let dirtTexture = Texture.from("dirt.png");
+    for (let i = 0; i < (app.screen.height / spriteScale)/2; i++){
+      let platform = new Sprite(dirtTexture);
+      platform.height = spriteScale*.2;
+      platform.width = spriteScale*1.5;
+      platform.y = ground.y - spriteScaleHeight - (i * spriteScale * 2);
+      platform.x= Math.floor(Math.random() * (app.screen.width));
+      platform.vx = 0;
+      platform.vy = .1;
+
+      platforms.push(platform);
+    }
+
 
     
     
     //Add elements to stage
     app.stage.addChild(bg);
     app.stage.addChild(ground);
-    app.stage.addChild(p1);
-
     for (i in platforms){
       app.stage.addChild(platforms[i]);
     }
+    app.stage.addChild(p1);
     
 
     //listen for keyboard input
@@ -330,6 +315,7 @@
       p1.jumpHeight = p1.y - 3*spriteScale;
       p1.hangtime = 12;
       up.unsubscribe();
+      down.unsubscribe();
 
     }
 
@@ -368,9 +354,32 @@
 
 
   function play(delta){
+
+    //move ground if necessary
+    if (ground.y < app.screen.height + spriteScale*10){
+        ground.y += ground.vy
+    }
+    //move platforms
+    for (let num in platforms){
+      platforms[num].y += platforms[num].vy;
+    }
     //Move player
     p1.x += p1.vx;
     p1.y += p1.vy;
+
+    //screen wrap (player going off right appears on left, vice versa)
+    if (p1.x >= app.screen.width){
+      p1.x = 0;
+    }
+    else if (p1.x <= 0){
+      p1.x = app.screen.width;
+    }
+
+
+    for (let i in platforms){
+          let surface = platforms[i];
+          //testLanding(p1, surface);
+        }
 
 
     //jumping
@@ -417,42 +426,47 @@
         } 
       }
       //test for collisions
-      else if (playerBottom >= groundTop){
+      else if (playerBottom >= ground.y){
         p1.vy = 0;
         p1.jumping = false;
         p1.surfaceOn = ground;
-        p1.y = app.screen.height - ground.height - p1.height*.5;
+        p1.y = ground.y - spriteScale*1.1;
         p1.texture = p1Textures.stand;
         up.subscribe();
+        down.subscribe();
       }
-      else{
-        for (i in platforms){
-          surface = platforms[i];
+      else if (p1.vy > 0){
+        for (let i in platforms){
+          let surface = platforms[i];
           testLanding(p1, surface);
         }
       }
     }
 
+    //han
     else if (p1.surfaceOn !== null){
       //player must be on a surface, or just leaving (falling)
-      let surfaceTop = p1.surfaceOn.y - p1.surfaceOn.height*.5;
       let surfaceLeft = p1.surfaceOn.x - p1.surfaceOn.width*.5;
-      let surfaceBottom = p1.surfaceOn.y + p1.surfaceOn.height*.5;
       let surfaceRight = p1.surfaceOn.x + p1.surfaceOn.width*.5;
-
       let playerLeft = p1.x - p1.width*.5;
       let playerRight = p1.x + p1.width*.5;
-      let playerTop = p1.y - p1.height*.5;
-      
-      
-      if ((playerBottom != groundTop) && (playerRight <= surfaceLeft || playerLeft >= surfaceRight)){  //player not touching ground, or no longer touching the current surface
+      p1.y +=.1;
+
+      if ((playerBottom < ground.y-11) && (playerRight < surfaceLeft || playerLeft > surfaceRight)){  //player not touching ground, or no longer touching the current surface
         p1.surfaceOn = null;
         p1.jumping = true;
         p1.texture = p1Textures.jump;
         p1.jumpHeight = p1.y;
+        up.unsubscribe();
+        down.unsubscribe();
       }
     }
 
+    //end game sequence
+    if (playerBottom >= app.screen.height) {
+      app.stage.removeChildren();
+      app.stage.addChild(new PIXI.Text("Game Over!", {fontSize: 18, fill: 0xe6eefc, align:'middle'}))
+    }
   }
 
 

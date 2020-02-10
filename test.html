@@ -1,110 +1,506 @@
 <!doctype html>
-<meta charset="utf-8">
-<title>Make a sprite from a texture atlas</title>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Hello World</title>
+</head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.1.3/pixi.min.js"></script>
 <body>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.1.3/pixi.min.js"></script>
-<script>
+  <script type="text/javascript">
+    let type = "WebGL"
+    if(!PIXI.utils.isWebGLSupported()){
+      type = "canvas"
+    }
 
-//Aliases
-let Application = PIXI.Application,
-    Container = PIXI.Container,
-    loader = PIXI.loader,
-    resources = PIXI.loader.resources,
-    TextureCache = PIXI.utils.TextureCache,
-    Sprite = PIXI.Sprite,
-    Rectangle = PIXI.Rectangle;
+    PIXI.utils.sayHello(type)
 
-//Create a Pixi Application
-let app = new Application({ 
-    width: 512, 
-    height: 512,                       
-    antialias: true, 
-    transparent: false, 
-    resolution: 1
-  }
-);
+  //Aliases
+  let Loader = PIXI.Loader;
+  let Sprite = PIXI.Sprite;
+  let Application = PIXI.Application;
+  let Texture = PIXI.Texture;
 
-//Add the canvas that Pixi automatically created for you to the HTML document
-document.body.appendChild(app.view);
 
-//load a JSON file and run the `setup` function when it's done
-loader
-  .add("images/treasureHunter.json")
-  .load(setup);
-
-//Define variables that might be used in more 
-//than one function
-let dungeon, explorer, treasure, door, id;
-
-function setup() {
-
-  //There are 3 ways to make sprites from textures atlas frames
-
-  //1. Access the `TextureCache` directly
-  let dungeonTexture = TextureCache["dungeon.png"];
-  dungeon = new Sprite(dungeonTexture);
-  app.stage.addChild(dungeon);
-
-  //2. Access the texture using throuhg the loader's `resources`:
-  explorer = new Sprite(
-    resources["images/treasureHunter.json"].textures["explorer.png"]
+  //Create a Pixi Application
+  let app = new Application({
+      width: 250,
+      height: 500,
+      antialias: true,
+      transparent: false,
+      resolution: 1
+    }
   );
-  explorer.x = 68;
+  //Add the canvas that Pixi automatically created for you to the HTML document
+  document.body.appendChild(app.view);
+  app.view.focus();
 
-  //Center the explorer vertically
-  explorer.y = app.stage.height / 2 - explorer.height / 2;
-  app.stage.addChild(explorer);
-   //3. Create an optional alias called `id` for all the texture atlas 
-  //frame id textures.
-  id = PIXI.loader.resources["images/treasureHunter.json"].textures; 
-  
-  //Make the treasure box using the alias
-  treasure = new Sprite(id["treasure.png"]);
-  app.stage.addChild(treasure);
+  //load spritesheets and run `setup` function
+  Loader.shared
+    .add("Spritesheets/playerSprites.json")
+    .add("Spritesheets/tiles.json")
+    .add("Spritesheets/backgrounds/bg.png")
+    .load(setup);
 
-  //Position the treasure next to the right edge of the canvas
-  treasure.x = app.stage.width - treasure.width - 48;
-  treasure.y = app.stage.height / 2 - treasure.height / 2;
-  app.stage.addChild(treasure);
+  //define vars
+  let p1, p2, ground, state, playerSprites, p1Textures, p2Textures, spriteScale;
+  let groundTop;
+  let left, right, up, down;
+  let platforms = new Array();
 
-  //Make the exit door
-  door = new Sprite(id["door.png"]); 
-  door.position.set(32, 0);
-  app.stage.addChild(door);
 
-  //Make the blobs
-  let numberOfBlobs = 6,
-      spacing = 48,
-      xOffset = 150;
+  //handle keyboard input
+  function keyboard(value){
+    let key = {};
+    key.value = value;
+    key.isDown = false;
+    key.isUp = true;
+    key.press = undefined;
+    key.release = undefined;
 
-  //Make as many blobs as there are `numberOfBlobs`
-  for (let i = 0; i < numberOfBlobs; i++) {
+    //The `downHandler`
+    key.downHandler = event => {
+      if (event.key === key.value) {
+        if (key.isUp && key.press) key.press();
+        key.isDown = true;
+        key.isUp = false;
+        event.preventDefault();
+      }
+    };
 
-    //Make a blob
-    let blob = new Sprite(id["blob.png"]);
+    //The `upHandler`
+    key.upHandler = event => {
+      if (event.key === key.value) {
+        if (key.isDown && key.release) key.release();
+        key.isDown = false;
+        key.isUp = true;
+        event.preventDefault();
+      }
+    };
 
-    //Space each blob horizontally according to the `spacing` value.
-    //`xOffset` determines the point from the left of the screen
-    //at which the first blob should be added.
-    let x = spacing * i + xOffset;
+    //Attach event listeners
+    const downListener = key.downHandler.bind(key);
+    const upListener = key.upHandler.bind(key);
 
-    //Give the blob a random y position
-    //(`randomInt` is a custom function - see below)
-    let y = randomInt(0, app.stage.height - blob.height);
+    key.subscribe = () => {
+      window.addEventListener(
+        "keydown", downListener, false
+      );
+      window.addEventListener(
+        "keyup", upListener, true
+      );
+    }
 
-    //Set the blob's position
-    blob.x = x;
-    blob.y = y;
 
-    //Add the blob sprite to the stage
-    app.stage.addChild(blob);
+
+    // Detach event listeners
+    key.unsubscribe = () => {
+      window.removeEventListener("keydown", downListener);
+      window.removeEventListener("keyup", upListener);
+    };
+
+    return key;
   }
-}
 
-//The `randomInt` helper function
-function randomInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+  function testCollision(r1, r2) {
+    //Define the variables we'll need to calculate
+    let hit, combinedHalfWidths, combinedHalfHeights, vx, vy;
 
-</script>
+    //hit will determine whether there's a collision
+    hit = false;
+
+    //Find the center points of each sprite
+    r1.centerX = r1.x + r1.width / 2;
+    r1.centerY = r1.y + r1.height / 2;
+    r2.centerX = r2.x + r2.width / 2;
+    r2.centerY = r2.y + r2.height / 2;
+
+    //Find the half-widths and half-heights of each sprite
+    r1.halfWidth = r1.width / 2;
+    r1.halfHeight = r1.height / 2;
+    r2.halfWidth = r2.width / 2;
+    r2.halfHeight = r2.height / 2;
+
+    //Calculate the distance vector between the sprites
+    vx = r1.centerX - r2.centerX;
+    vy = r1.centerY - r2.centerY;
+
+    //Figure out the combined half-widths and half-heights
+    combinedHalfWidths = r1.halfWidth + r2.halfWidth;
+    combinedHalfHeights = r1.halfHeight + r2.halfHeight;
+
+    //Check for a collision on the x axis
+    if (Math.abs(vx) < combinedHalfWidths) {
+
+      //A collision might be occurring. Check for a collision on the y axis
+      if (Math.abs(vy) < combinedHalfHeights) {
+
+        //There's definitely a collision happening
+        hit = true;
+      } else {
+
+        //There's no collision on the y axis
+        hit = false;
+      }
+    } else {
+
+      //There's no collision on the x axis
+      hit = false;
+    }
+
+    //`hit` will be either `true` or `false`
+    return hit;
+  };
+
+  function testLanding(player, surface){
+    //platforms is a list of all sprites that the player could land on
+
+    playerLeft = player.x - player.width*.5;
+    playerBottom = player.y + player.height*.5;
+    playerRight = player.x + player.width*.5;
+    playerTop = player.y - player.height*.5;
+
+
+    if (testCollision(player, surface)){
+      surfaceLeft = surface.x - surface.width*.5;
+      surfaceBottom = surface.y + surface.height*.5;
+      surfaceRight = surface.x + surface.width*.5;
+      surfaceTop = surface.y - surface.height*.5;
+
+
+      if (playerBottom >= surfaceTop && playerBottom <= surfaceTop + 3){
+        player.vy = 0;
+        player.y = surfaceTop - player.height*.5;
+        player.jumping = false;
+        player.surfaceOn = surface;
+        player.texture = p1Textures.stand;
+        up.subscribe();
+        down.subscribe();
+      }
+      else if (playerLeft <= surfaceRight){
+        console.log("right")
+        player.vy = 8;
+        player.x = surfaceRight + player.width;
+      }
+      else if (playerTop <= surfaceBottom && playerTop >= surfaceBottom - surfaceBottom*.1){
+        player.vy = 8;
+        player.y = surfaceBottom + player.height*.5;
+      }
+      else{
+        player.vy = 0;
+      }
+      /*
+      else if (playerLeft <= surfaceRight && playerLeft >= surfaceRight - surfaceRight*.1){
+        console.log("right")
+        player.vy = 8;
+        player.x = surfaceRight + player.height*.6;
+      }
+      else{
+        player.vy = 8;
+        player.x = surfaceLeft - player.height*.6;
+      }*/
+
+      //player.x = playerRight;
+
+
+    }
+
+  }
+
+
+  //This `setup` function will run when the image has loaded
+  function setup() {
+    //load spritesheets
+    //playerSprites = Loader.shared.resources["Spritesheets/playerSprites.json"].spritesheet.textures;
+    let p1WalkTextures = [];
+    let p2WalkTextures = [];
+
+    let animations = {
+      "p1_walk": ["p1_walk01.png","p1_walk02.png","p1_walk03.png","p1_walk04.png","p1_walk05.png","p1_walk06.png","p1_walk07.png","p1_walk08.png","p1_walk09.png","p1_walk10.png","p1_walk11.png"],
+      "p2_walk": ["p2_walk01.png","p2_walk02.png","p2_walk03.png","p2_walk04.png","p2_walk05.png","p2_walk06.png","p2_walk07.png","p2_walk08.png","p2_walk09.png","p2_walk10.png","p2_walk11.png"]
+    };
+
+    for (i=0; i <= 10; i++){
+      p1WalkTextures[i] = Texture.from(animations.p1_walk[i]);
+      p2WalkTextures[i] = Texture.from(animations.p2_walk[i]);
+    }
+
+    p1Textures= {"walkTextures" : p1WalkTextures,
+      "duck": Texture.from("p1_duck.png"),
+      "front": Texture.from("p1_front.png"),
+      "hurt": Texture.from("p1_hurt.png"),
+      "jump": Texture.from("p1_jump.png"),
+      "stand": Texture.from("p1_stand.png")};
+
+    p2Textures= {"walkTextures" : p2WalkTextures,
+      "duck": Texture.from("p2_duck.png"),
+      "front": Texture.from("p2_front.png"),
+      "hurt": Texture.from("p2_hurt.png"),
+      "jump": Texture.from("p2_jump.png"),
+      "stand": Texture.from("p2_stand.png")};
+
+
+
+    //vars
+    spriteScale = 20;
+    let spriteScaleHeight = spriteScale + (spriteScale*.2);
+
+    //make sprites
+    // p1
+    p1 = new Sprite(p1Textures.front);
+    p1.height = spriteScaleHeight;
+    p1.width = spriteScale;
+    p1.y = app.screen.height /1.5 - p1.height/2;
+    p1.x=100;
+    p1.vx = 0;
+    p1.vy = 0;
+    p1.surfaceOn = null;
+    p1.jumped = false;
+    p1.jumpHeight = null;
+    p1.top = p1.y - p1.height*.5;
+    p1.bottom = p1.y + p1.height*.5;
+    p1.left = p1.x - p1.width*.5;
+    p1.right = p1.x + p1.width*.5;
+
+
+
+    /*platform = new Sprite(Texture.from("dirt.png"));
+    platform.height = spriteScale;//*.5;
+    platform.width = spriteScale;
+    platform.y = app.screen.height - 200;
+    platform.x=100;
+    platform.vx = 0;
+    platform.vy = 0;
+
+    platforms.push(platform);*/
+
+    //make containers
+    ground = new PIXI.Container();
+    for (i = 0; i < app.screen.width / spriteScale + 1; i++){
+      grass = new Sprite(Texture.from("grassMid.png"));
+      dirt = new Sprite(Texture.from("grassCenter.png"));
+      grass.height = grass.width = dirt.height = dirt.width = spriteScale;
+      grass.y = app.screen.height - (spriteScale*1.5);
+      dirt.y = app.screen.height - (spriteScale*.5);
+      grass.x = dirt.x = i * spriteScale;
+      ground.addChild(grass, dirt);
+    }
+    groundTop = app.screen.height - ground.height;
+
+    let bg = new Sprite(Loader.shared.resources["Spritesheets/backgrounds/bg.png"].texture);
+    //bg.x = 100, bg.y = 100;
+    bg.height = bg.width = 1000;
+
+
+    // platforms
+    dirtTexture = Texture.from("dirt.png");
+    for (i = 0; i < (app.screen.height / spriteScale)/2; i++){
+      console.log(i)
+      platform = new Sprite(dirtTexture);
+      platform.height = spriteScale;//*.5;
+      platform.width = spriteScale;
+      platform.y = groundTop - spriteScaleHeight - (i * spriteScale * 2);
+      platform.x= Math.floor(Math.random() * (app.screen.width));
+      platform.vx = 0;
+      platform.vy = 0;
+
+      platforms.push(platform);
+    }
+
+
+
+
+    //Add elements to stage
+    app.stage.addChild(bg);
+    app.stage.addChild(ground);
+    app.stage.addChild(p1);
+
+    for (i in platforms){
+      app.stage.addChild(platforms[i]);
+    }
+
+
+    //listen for keyboard input
+    left = keyboard("ArrowLeft"),
+    right = keyboard("ArrowRight"),
+    up = keyboard("ArrowUp"),
+    down = keyboard("ArrowDown");
+
+    //start listening for keyboard input
+    left.subscribe();
+    right.subscribe();
+    down.subscribe();
+    up.subscribe();
+
+
+    //key press and release methods
+    // left
+    left.press = () => {
+      p1.vx = -4;
+      p1.height = spriteScaleHeight;
+    }
+    left.release = () => {
+      p1.vx = 0;
+      p1.texture = p1Textures.stand;
+      p1.texture.rotate = 12;
+    }
+
+    //right
+    right.press = () => {
+      p1.vx = 4;
+      p1.height = spriteScaleHeight;
+    }
+    right.release = () => {
+      p1.vx = 0;
+      p1.texture = p1Textures.stand;
+      p1.texture.rotate = 0;
+    }
+
+    //up
+    up.press = () => {
+      p1.vy = -9;
+      p1.jumping = true;
+      p1.jumpHeight = p1.y - 3*spriteScale;
+      p1.hangtime = 12;
+      up.unsubscribe();
+      down.unsubscribe();
+
+    }
+
+    //down
+    down.press = () => {
+      p1.vy = 0;
+      p1.vx = 0;
+      p1.y = p1.y + spriteScale * .15;
+      p1.height = spriteScale * .9;
+      p1.texture = p1Textures.duck;
+      left.unsubscribe();
+      right.unsubscribe();
+      up.unsubscribe();
+    }
+    down.release = () => {
+      p1.vy = 0;
+      p1.y = p1.y - spriteScale * .15;
+      p1.height = spriteScaleHeight;
+      p1.texture = p1WalkTextures[1];
+      left.subscribe();
+      right.subscribe();
+      up.subscribe();
+    }
+
+
+    //set game state
+    state = play;
+    //start game loop
+    app.ticker.add(delta => gameLoop(delta));
+  }
+
+
+  function gameLoop(delta) {
+    state(delta);
+  }
+
+
+  function play(delta){
+    //Move player
+    p1.x += p1.vx;
+    p1.y += p1.vy;
+
+
+    for (let i in platforms){
+          let surface = platforms[i];
+          //testLanding(p1, surface);
+        }
+
+
+    //jumping
+    if (p1.vy !== 0){
+      p1.texture = p1Textures.jump;
+      if (p1.vx < 0){   //moving left
+        p1.texture.rotate = 12;
+      }
+      else {
+        p1.texture.rotate = 0;
+      }
+    }
+    //walking
+    else if (p1.vx !== 0){
+      let cycle = Math.floor(Date.now() / 100) % 4;
+      p1.texture = p1Textures.walkTextures[cycle];
+      //right
+      if (p1.vx > 0){
+        p1.texture.rotate = 0;
+      }
+      //left
+      else {
+        p1.texture.rotate = 12;
+      }
+
+    }
+
+    let playerBottom = p1.y + p1.height*.5;
+
+    if (p1.jumping){
+      if (p1.y <= p1.jumpHeight){
+        if (p1.hangtime === 0){
+          p1.jumpHeight = null;
+          p1.vy = 8;
+        }
+        else{
+          p1.hangtime -= 1;
+          if (p1.hangtime >= 6){
+            p1.vy = -1;
+          }
+          else{
+            p1.vy = 1;
+          }
+        }
+      }
+      //test for collisions
+      else if (playerBottom >= groundTop){
+        p1.vy = 0;
+        p1.jumping = false;
+        p1.surfaceOn = ground;
+        p1.y = app.screen.height - ground.height - p1.height*.5;
+        p1.texture = p1Textures.stand;
+        up.subscribe();
+        down.subscribe();
+      }
+      else{
+        for (let i in platforms){
+          let surface = platforms[i];
+          testLanding(p1, surface);
+        }
+      }
+    }
+
+    else if (p1.surfaceOn !== null){
+      //player must be on a surface, or just leaving (falling)
+      let surfaceTop = p1.surfaceOn.y - p1.surfaceOn.height*.5;
+      let surfaceLeft = p1.surfaceOn.x - p1.surfaceOn.width*.5;
+      let surfaceBottom = p1.surfaceOn.y + p1.surfaceOn.height*.5;
+      let surfaceRight = p1.surfaceOn.x + p1.surfaceOn.width*.5;
+
+      let playerLeft = p1.x - p1.width*.5;
+      let playerRight = p1.x + p1.width*.5;
+      let playerTop = p1.y - p1.height*.5;
+
+
+      if ((playerBottom != groundTop) && (playerRight <= surfaceLeft || playerLeft >= surfaceRight)){  //player not touching ground, or no longer touching the current surface
+        p1.surfaceOn = null;
+        p1.jumping = true;
+        p1.texture = p1Textures.jump;
+        p1.jumpHeight = p1.y;
+        up.unsubscribe();
+        down.unsubscribe();
+      }
+    }
+
+  }
+
+
+
+
+
+  </script>
 </body>
+</html>
