@@ -38,6 +38,7 @@
   Loader.shared
     .add("Spritesheets/playerSprites.json")
     .add("Spritesheets/tiles.json")
+    .add("Spritesheets/items.json")
     .add("Spritesheets/backgrounds/bg.png")
     .load(setup);
 
@@ -45,6 +46,7 @@
   let p1, p2, ground, state, p1Textures, p2Textures, spriteScale;
   let left, right, up, down;
   let platforms = new Array();
+  let coins = new Array();
 
 
   //handle keyboard input
@@ -201,7 +203,6 @@
       "stand": Texture.from("p2_stand.png")};
     
 
-
     //vars
     spriteScale = 20;
     let spriteScaleHeight = spriteScale + (spriteScale*.2);
@@ -239,16 +240,14 @@
       ground.addChild(grass, dirt);
     }
     ground.y = app.screen.height - spriteScale*1.5;
-    //groundTop = app.screen.height - ground.height;
 
     let bg = new Sprite(Loader.shared.resources["Spritesheets/backgrounds/bg.png"].texture);
     //bg.x = 100, bg.y = 100;
     bg.height = bg.width = 1000;
 
-
     // platforms
     let dirtTexture = Texture.from("dirt.png");
-    for (let i = 0; i < (app.screen.height / spriteScale)/2; i++){
+    for (let i = 0; i < (app.screen.height / spriteScale); i++){
       let platform = new Sprite(dirtTexture);
       platform.height = spriteScale*.2;
       platform.width = spriteScale*1.5;
@@ -256,18 +255,45 @@
       platform.x= Math.floor(Math.random() * (app.screen.width));
       platform.vx = 0;
       platform.vy = .1;
-
       platforms.push(platform);
     }
 
+    //coins
+    let coinTexture = Texture.from("coinGold.png");
+    let coinYBound = app.screen.height-10;
+    let coinXBound = app.screen.width-10;
+    let numCoins = 0;
+    while (numCoins < 100){
+      let valid = true;
+      let coin = new Sprite(coinTexture);
+      coin.x = Math.floor(Math.random() * (coinXBound + 5));
+      coin.y = Math.floor(Math.random() * (coinYBound - 5));
+      coin.height = coin.width = spriteScale*.5;
 
-    
+      for (let num in coins){
+        if (testCollision(coin, coins[num])){
+          valid = false;
+          console.log(numCoins)
+          break;
+        }
+      }
+      if (valid) {
+        coins.push(coin);
+        numCoins += 1;
+      }
+    }
+    console.log(coins);
+
+
     
     //Add elements to stage
     app.stage.addChild(bg);
     app.stage.addChild(ground);
     for (i in platforms){
       app.stage.addChild(platforms[i]);
+    }
+    for (i in coins){
+      app.stage.addChild(coins[i]);
     }
     app.stage.addChild(p1);
     
@@ -354,6 +380,17 @@
 
 
   function play(delta){
+
+    //check collision and render coins
+    for (let i in coins){
+      if (testCollision(p1, coins[i])){
+        app.stage.removeChild(coins[i]);
+        //coins.splice(i, 1);
+      }
+    }
+    for (let i in coins){
+      //app.stage.addChild(coins[i]);
+    }
 
     //move ground if necessary
     if (ground.y < app.screen.height + spriteScale*10){
@@ -452,7 +489,8 @@
       let playerRight = p1.x + p1.width*.5;
       p1.y +=.1;
 
-      if ((playerBottom < ground.y-11) && (playerRight < surfaceLeft || playerLeft > surfaceRight)){  //player not touching ground, or no longer touching the current surface
+      if ((playerBottom < ground.y-11) && (!testCollision(p1, p1.surfaceOn))){ //player not touching ground, or no longer touching the current surface
+        console.log(p1.surfaceOn)
         p1.surfaceOn = null;
         p1.jumping = true;
         p1.texture = p1Textures.jump;
