@@ -43,7 +43,7 @@
     .load(setup);
 
   //define vars
-  let p1, p2, ground, state, p1Textures, p2Textures, spriteScale;
+  let p1, p2, ground, exit, state, p1Textures, p2Textures, spriteScale, time;
   let left, right, up, down;
   let platforms = new Array();
   let coins = new Array();
@@ -192,6 +192,8 @@
 
   //This `setup` function will run when the image has loaded
   function setup() {
+    time = 0;
+
     //load spritesheets
     //playerSprites = Loader.shared.resources["Spritesheets/playerSprites.json"].spritesheet.textures;
     let p1WalkTextures = [];
@@ -287,6 +289,13 @@
       }
     }
 
+    //exit
+    exit = new Sprite( Texture.from("signExit.png"));
+    exit.y = -500;
+    exit.x = app.screen.width*.5;
+    exit.height = exit.width = spriteScale*2;
+    exit.vy = 0;
+
 
     //coins
     let coinTexture = Texture.from("coinGold.png");
@@ -323,6 +332,7 @@
     for (i in coins){
       app.stage.addChild(coins[i]);
     }
+    app.stage.addChild(exit);
     app.stage.addChild(p1);
     
 
@@ -408,6 +418,7 @@
 
 
   function play(delta){
+    time++;
     /*//check collision and render coins
     for (let i in coins){
       if (testCollision(p1, coins[i])){
@@ -437,6 +448,9 @@
     else if (p1.y < app.screen.height * .7) speed = .4;
     else speed = .3;
 
+    //move exit
+    exit.y += speed;
+    console.log(exit.y);
 
     //move platforms, remove non-visible platforms
     let num = 0;
@@ -549,6 +563,7 @@
       app.stage.removeChildren();
       app.stage.addChild(new PIXI.Text("Game Over!", {fontSize: 18, fill: 0xe6eefc, align:'middle'}))
     }
+    if (time%100 == 0) console.log(time);
   }
 
 
