@@ -39,11 +39,11 @@
     .add("Spritesheets/playerSprites.json")
     .add("Spritesheets/tiles.json")
     .add("Spritesheets/items.json")
-    .add("Spritesheets/backgrounds/bg.png")
+    .add("Spritesheets/backgrounds/bg1.png")
     .load(setup);
 
   //define vars
-  let p1, p2, ground, exit, state, p1Textures, p2Textures, spriteScale, time;
+  let p1, p2, ground, exit, state, p1Textures, p2Textures, spriteScale, time, numCoinsCollected, coinDisplay;
   let left, right, up, down;
   let platforms = new Array();
   let coins = new Array();
@@ -157,7 +157,7 @@
     if (testCollision(player, surface)){
       let surfaceTop = surface.y - surface.height*.5;
 
-      if (playerBottom >= surfaceTop && playerBottom >= surfaceTop + 5){
+      if (playerBottom >= surfaceTop && playerBottom <= surfaceTop + 10){
         player.vy = 0;
         player.y = surfaceTop - player.height*.5;
         player.jumping = false;
@@ -177,7 +177,7 @@
       platform.height = spriteScale * .5;
       platform.width = spriteScale
       if (i == 0) {
-        platform.y = prevPlatform.y - spriteScale - Math.random() * spriteScale * 2;
+        platform.y = prevPlatform.y - spriteScale - Math.random() * spriteScale * 1.8;
         platform.x = Math.random() * (app.screen.width - platform.width - 20) + 20;
       } else {
         platform.y = platforms[platforms.length - 1].y;
@@ -187,12 +187,25 @@
       platform.vy = prevPlatform.vy;
       platforms.push(platform);
       app.stage.addChild(platforms[platforms.length - 1]);
+      if (Math.random()*4<1) {
+        generateCoin(platform);
+      }
     }
+  }
+  function generateCoin(platform){
+    let coin = new Sprite(Texture.from("gemYellow.png"));
+    coin.height = coin.width = spriteScale*.7;
+    coin.anchor.set(0.5);
+    coin.x = platform.x;
+    coin.y = platform.y - coin.height;
+    coins.push(coin);
+    app.stage.addChild(coin);
   }
 
   //This `setup` function will run when the image has loaded
   function setup() {
     time = 0;
+    numCoinsCollected = 0;
 
     //load spritesheets
     //playerSprites = Loader.shared.resources["Spritesheets/playerSprites.json"].spritesheet.textures;
@@ -228,31 +241,13 @@
     spriteScale = 20;
     let spriteScaleHeight = spriteScale + (spriteScale*.2);
 
-    //make sprites
-    // p1
-    p1 = new Sprite(p1Textures.front);
-    p1.height = spriteScaleHeight;
-    p1.width = spriteScale;
-    p1.y = app.screen.height /1.5 - p1.height/2;
-    p1.x=100;
-    p1._zIndex = 100000
-    p1.vx = 0;
-    p1.vy = 0;
-    p1.surfaceOn = null;
-    p1.jumped = false;
-    p1.jumpHeight = null;
-    p1.top = p1.y - p1.height*.5;
-    p1.bottom = p1.y + p1.height*.5;
-    p1.left = p1.x - p1.width*.5;
-    p1.right = p1.x + p1.width*.5;
-
-
-    //make containers  
+    //---make sprites---
+    //ground
     ground = new PIXI.Container();
     ground.vy = .1;
-    for (i = 0; i < app.screen.width / spriteScale + 1; i++){
-      grass = new Sprite(Texture.from("grassMid.png"));
-      dirt = new Sprite(Texture.from("grassCenter.png"));
+    for (let i = 0; i < app.screen.width / spriteScale + 1; i++){
+      let grass = new Sprite(Texture.from("grassMid.png"));
+      let dirt = new Sprite(Texture.from("grassCenter.png"));
       grass.height = grass.width = dirt.height = dirt.width = spriteScale;
       dirt.y = ground.y + spriteScale-1;
       grass.x = dirt.x = i * spriteScale;
@@ -260,69 +255,56 @@
     }
     ground.y = app.screen.height - spriteScale*1.5;
 
-    let bg = new Sprite(Loader.shared.resources["Spritesheets/backgrounds/bg.png"].texture);
+    let bg = new Sprite(Loader.shared.resources["Spritesheets/backgrounds/bg1.png"].texture);
     bg.height = bg.width = 1000;
 
     // platforms
-    let dirtTexture = Texture.from("grassHalf.png");
+    let dirtTexture = Texture.from("castleHalf.png");
 
-   //create starting platforms
-    let prevY = ground.y - spriteScaleHeight;
-    while (prevY > 0){
-      let size = Math.floor(Math.random() *3);
-      for (let i=0; i<=size; i++){
-        let platform = new Sprite(dirtTexture);
-        platform.height = spriteScale*.5;
-        platform.width = spriteScale
-        if (i == 0){
-          platform.y = prevY - spriteScale - Math.random()*spriteScale*2;
-          platform.x= Math.random() * (app.screen.width - platform.width - 20) + 20;
-        }
-        else{
-          platform.y = platforms[platforms.length-1].y;
-          platform.x = platforms[platforms.length-1].x + spriteScale;
-        }
-        platform.vx = 0;
-        platform.vy = .1;
-        platforms.push(platform);
-        prevY = platform.y;
-      }
+   //create starting platform
+    for (let i=0; i<2; i++){
+      let platform = new Sprite(Texture.from("grassHalf.png"));
+      platform.y = app.screen.height*.75;
+      platform.x = spriteScale*i + spriteScale*.5;
+      platform.width = spriteScale;
+      platform.height = spriteScale*.5;
+      platforms.push(platform);
+      app.stage.addChild(platform);
     }
+
+    while (platforms[platforms.length-1].y > 0){
+      generatePlatform(dirtTexture);
+    }
+
+    // p1
+    p1 = new Sprite(p1Textures.front);
+    p1.anchor.set(0.5);
+    p1.height = spriteScaleHeight;
+    p1.width = spriteScale;
+    p1.y = app.screen.height*.75 - spriteScaleHeight;
+    p1.x=spriteScale;
+    p1._zIndex = 100000
+    p1.vx = 0;
+    p1.vy = 0;
+    p1.surfaceOn = platforms[0];
+    p1.jumped = false;
+    p1.jumpHeight = null;
+    p1.top = p1.y - p1.height*.5;
+    p1.bottom = p1.y + p1.height*.5;
+    p1.left = p1.x - p1.width*.5;
+    p1.right = p1.x + p1.width*.5;
 
     //exit
     exit = new Sprite( Texture.from("signExit.png"));
-    exit.y = -500;
+    exit.y = -1000;
     exit.x = app.screen.width*.5;
     exit.height = exit.width = spriteScale*2;
     exit.vy = 0;
 
-
-    //coins
-    let coinTexture = Texture.from("coinGold.png");
-    let coinYBound = app.screen.height-10;
-    let coinXBound = app.screen.width-10;
-    let numCoins = 0;
-    while (numCoins < 100){
-      let valid = true;
-      let coin = new Sprite(coinTexture);
-      coin.x = Math.floor(Math.random() * (coinXBound + 5));
-      coin.y = Math.floor(Math.random() * (coinYBound - 5));
-      coin.height = coin.width = spriteScale*.5;
-
-      for (let num in coins){
-        if (testCollision(coin, coins[num])){
-          valid = false;
-          break;
-        }
-      }
-      if (valid) {
-        coins.push(coin);
-        numCoins += 1;
-      }
-    }
+    //gem count
+    coinDisplay = new PIXI.Text("gems: " + numCoinsCollected, {fontSize: 15, fill: 0xe6eefc});
 
 
-    
     //Add elements to stage
     app.stage.addChild(bg);
     app.stage.addChild(ground);
@@ -334,6 +316,7 @@
     }
     app.stage.addChild(exit);
     app.stage.addChild(p1);
+    app.stage.addChild(coinDisplay);
     
 
     //listen for keyboard input
@@ -419,22 +402,28 @@
 
   function play(delta){
     time++;
-    /*//check collision and render coins
+    //check collision and render coins
     for (let i in coins){
       if (testCollision(p1, coins[i])){
         app.stage.removeChild(coins[i]);
-        //coins.splice(i, 1);
+        coins.splice(i, 1);
+        numCoinsCollected++;
       }
-    }*/
+    }
+    app.stage.removeChild(coinDisplay);
+    coinDisplay = new PIXI.Text("Gems: " + numCoinsCollected, {fontSize: 15, fill: 0xe6eefc});
+    coinDisplay.x = app.screen.width - coinDisplay.width;
+    app.stage.addChild(coinDisplay);
 
     //generate platforms
-    if (platforms[platforms.length-1].y >= 0){
-      generatePlatform(Texture.from("grassHalf.png"));
+    let lastPlatY = platforms[platforms.length-1].y
+    if (lastPlatY >= 0 && lastPlatY >= exit.y){
+      generatePlatform(Texture.from("castleHalf.png"));
     }
 
     //move ground if necessary
     if (ground.y < app.screen.height + spriteScale*10){
-        ground.y += ground.vy
+        //ground.y += ground.vy
     }
 
     //determine platform speed
@@ -448,10 +437,11 @@
     else if (p1.y < app.screen.height * .7) speed = .4;
     else speed = .3;
 
-    //move exit
+    //move exit, coins, platforms
     exit.y += speed;
-    console.log(exit.y);
-
+    for (coin in coins){
+      coins[coin].y += speed;
+    }
     //move platforms, remove non-visible platforms
     let num = 0;
     while (num != platforms.length){
@@ -477,12 +467,6 @@
     }
 
 
-    for (let i in platforms){
-          let surface = platforms[i];
-          //testLanding(p1, surface);
-        }
-
-
     //jumping
     if (p1.vy !== 0){
       p1.texture = p1Textures.jump;
@@ -505,7 +489,6 @@
       else { 
         p1.texture.rotate = 12;
       }
-        
     }
 
     let playerBottom = p1.y + p1.height*.5;
@@ -544,7 +527,6 @@
       }
     }
 
-    //han
     else if (p1.surfaceOn !== null){
       //player must be on a surface, or just leaving (falling)
       p1.y += speed;
@@ -553,7 +535,6 @@
         p1.jumping = true;
         p1.texture = p1Textures.jump;
         p1.jumpHeight = p1.y;
-        up.unsubscribe();
         down.unsubscribe();
       }
     }
@@ -561,11 +542,34 @@
     //end game sequence
     if (playerBottom >= app.screen.height+spriteScale/2) {
       app.stage.removeChildren();
-      app.stage.addChild(new PIXI.Text("Game Over!", {fontSize: 18, fill: 0xe6eefc, align:'middle'}))
+      let displayMessage = new PIXI.Text("Game Over!", {fontSize: 18, fill: 0xe6eefc});
+      app.stage.addChild(displayMessage);
+      state= end;
     }
-    if (time%100 == 0) console.log(time);
+    else if (exit.y > 0 && p1.y <= exit.y){
+      app.stage.removeChildren();
+      let wonMessage = "You won!\n\n";
+      //get score
+      let timeBonus = 0;
+      if (time < 3000) timeBonus = 3000-time;
+
+      let coinBonus = numCoinsCollected * 50;
+      let score = 100 + timeBonus + coinBonus;
+      let scoreMessage = "Score: " + score + "\n  reached ship: 100\n  time bonus: " + timeBonus + "\n  coin bonus: " + numCoinsCollected + " x 50 = " + coinBonus + "\n";
+
+      let displayMessage = new PIXI.Text(wonMessage + scoreMessage, {fontSize: 15, fill: 0xe6eefc});
+      displayMessage.anchor.set(0.5);
+      displayMessage.y = app.screen.height*.5;
+      displayMessage.x = app.screen.width*.5;
+      app.stage.addChild(displayMessage);
+
+      state = end;
+    }
   }
 
+  function end(){
+
+  }
 
   
 
