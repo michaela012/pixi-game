@@ -22,11 +22,11 @@
 
 
   //Create a Pixi Application
-  let app = new Application({ 
-      width: 250,
+  let app = new Application({
+      width: 300,
       height: 500,
-      antialias: true, 
-      transparent: false, 
+      antialias: true,
+      transparent: false,
       resolution: 1
     }
   );
@@ -90,15 +90,15 @@
         "keyup", upListener, true
       );
     }
-    
 
-    
+
+
     // Detach event listeners
     key.unsubscribe = () => {
       window.removeEventListener("keydown", downListener);
       window.removeEventListener("keyup", upListener);
     };
-    
+
     return key;
   }
 
@@ -167,7 +167,7 @@
         down.subscribe();
       }
     }
-    
+
   }
   function generatePlatform(texture){
     let prevPlatform = platforms[platforms.length-1];
@@ -178,7 +178,7 @@
       platform.width = spriteScale
       if (i == 0) {
         platform.y = prevPlatform.y - spriteScale - Math.random() * spriteScale * 1.8;
-        platform.x = Math.random() * (app.screen.width - platform.width - 20) + 20;
+        platform.x = Math.random() * (app.screen.width - platform.width - spriteScale*1.5) + spriteScale*.5;//+ spriteScale*.5;
       } else {
         platform.y = platforms[platforms.length - 1].y;
         platform.x = platforms[platforms.length - 1].x + spriteScale;
@@ -222,20 +222,25 @@
       p2WalkTextures[i] = Texture.from(animations.p2_walk[i]);
     }
 
-    p1Textures= {"walkTextures" : p1WalkTextures, 
-      "duck": Texture.from("p1_duck.png"), 
-      "front": Texture.from("p1_front.png"), 
-      "hurt": Texture.from("p1_hurt.png"), 
-      "jump": Texture.from("p1_jump.png"), 
+    p1Textures= {"walkTextures" : p1WalkTextures,
+      "duck": Texture.from("p1_duck.png"),
+      "front": Texture.from("p1_front.png"),
+      "hurt": Texture.from("p1_hurt.png"),
+      "jump": Texture.from("p1_jump.png"),
       "stand": Texture.from("p1_stand.png")};
 
-    p2Textures= {"walkTextures" : p2WalkTextures, 
-      "duck": Texture.from("p2_duck.png"), 
-      "front": Texture.from("p2_front.png"), 
-      "hurt": Texture.from("p2_hurt.png"), 
-      "jump": Texture.from("p2_jump.png"), 
+    p2Textures= {"walkTextures" : p2WalkTextures,
+      "duck": Texture.from("p2_duck.png"),
+      "front": Texture.from("p2_front.png"),
+      "hurt": Texture.from("p2_hurt.png"),
+      "jump": Texture.from("p2_jump.png"),
       "stand": Texture.from("p2_stand.png")};
-    
+
+    enemyAnimations = {
+      "e1Fly" : [],
+      "e2Fly" : []
+    }
+
 
     //vars
     spriteScale = 20;
@@ -253,7 +258,20 @@
       grass.x = dirt.x = i * spriteScale;
       ground.addChild(grass, dirt);
     }
+    //direction arrows
+    let arrowLeft = new Sprite(Texture.from("signLeft.png"))
+    let arrowRight = new Sprite(Texture.from("signRight.png"))
+    arrowLeft.anchor.set(0.5);
+    arrowRight.anchor.set(0.5);
+    arrowLeft.x = 20
+    arrowRight.x = app.screen.width - spriteScale;
+    arrowLeft.y = arrowRight.y = ground.y - spriteScale*1.25;
+    arrowLeft.height = arrowLeft.width = arrowRight.height = arrowRight.width = spriteScale * 1.5;
+    ground.addChild(arrowLeft, arrowRight);
+
+
     ground.y = app.screen.height - spriteScale*1.5;
+
 
     let bg = new Sprite(Loader.shared.resources["Spritesheets/backgrounds/bg1.png"].texture);
     bg.height = bg.width = 1000;
@@ -287,8 +305,9 @@
     p1.vx = 0;
     p1.vy = 0;
     p1.surfaceOn = platforms[0];
-    p1.jumped = false;
-    p1.jumpHeight = null;
+    p1.jumping = false;
+    p1.jumpHeight = p1.y;
+    p1.hangtime = 0;
     p1.top = p1.y - p1.height*.5;
     p1.bottom = p1.y + p1.height*.5;
     p1.left = p1.x - p1.width*.5;
@@ -317,7 +336,8 @@
     app.stage.addChild(exit);
     app.stage.addChild(p1);
     app.stage.addChild(coinDisplay);
-    
+    //app.stage.addChild(arrowLeft);
+
 
     //listen for keyboard input
     left = keyboard("ArrowLeft"),
@@ -330,7 +350,7 @@
     right.subscribe();
     down.subscribe();
     up.subscribe();
-    
+
 
     //key press and release methods
     // left
@@ -359,7 +379,7 @@
     up.press = () => {
       p1.vy = -9;
       p1.jumping = true;
-      p1.jumpHeight = p1.y - 3*spriteScale;
+      p1.jumpHeight = p1.y - 4*spriteScale;
       p1.hangtime = 12;
       up.unsubscribe();
       down.unsubscribe();
@@ -423,7 +443,7 @@
 
     //move ground if necessary
     if (ground.y < app.screen.height + spriteScale*10){
-        //ground.y += ground.vy
+        ground.y += ground.vy
     }
 
     //determine platform speed
@@ -478,7 +498,7 @@
       }
     }
     //walking
-    else if (p1.vx !== 0){ 
+    else if (p1.vx !== 0){
       let cycle = Math.floor(Date.now() / 100) % 4;
       p1.texture = p1Textures.walkTextures[cycle];
       //right
@@ -486,12 +506,13 @@
         p1.texture.rotate = 0;
       }
       //left
-      else { 
+      else {
         p1.texture.rotate = 12;
       }
     }
 
     let playerBottom = p1.y + p1.height*.5;
+
 
     if (p1.jumping){
       if (p1.y <= p1.jumpHeight){
@@ -507,7 +528,7 @@
           else{
             p1.vy = 1;
           }
-        } 
+        }
       }
       //test for collisions
       else if (playerBottom >= ground.y){
@@ -529,7 +550,9 @@
 
     else if (p1.surfaceOn !== null){
       //player must be on a surface, or just leaving (falling)
-      p1.y += speed;
+      if (p1.surfaceOn != ground) p1.y += speed;
+      else (p1.y += .1);
+
       if ((playerBottom < ground.y-11) && (!testCollision(p1, p1.surfaceOn))){ //player not touching ground, or no longer touching the current surface
         p1.surfaceOn = null;
         p1.jumping = true;
@@ -571,7 +594,7 @@
 
   }
 
-  
+
 
 
   </script>
