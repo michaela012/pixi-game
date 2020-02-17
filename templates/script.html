@@ -5,6 +5,7 @@
   <title>Hello World</title>
 </head>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.1.3/pixi.min.js"></script>
+  <style> @import url(http://fonts.googleapis.com/css?family=Odibee+Sans:400,600); </style>
 <body>
   <script type="text/javascript">
     let type = "WebGL"
@@ -37,16 +38,24 @@
   //load spritesheets and run `setup` function
   Loader.shared
     .add("Spritesheets/playerSprites.json")
+    .add("Spritesheets/playerSprites2.json")
     .add("Spritesheets/tiles.json")
     .add("Spritesheets/items.json")
+    .add("Spritesheets/enemies.json")
     .add("Spritesheets/backgrounds/bg1.png")
-    .load(setup);
+    .load(startScreen);
 
   //define vars
-  let p1, p2, ground, exit, state, p1Textures, p2Textures, spriteScale, time, numCoinsCollected, coinDisplay;
+  let p1, ground, exit, state, p1Textures, enemyTextures, time, numCoinsCollected, coinDisplay;
+  let spriteScale = 20;
+  let lifeCount = 3;
+  let initialSetup = true;
   let left, right, up, down;
   let platforms = new Array();
   let coins = new Array();
+  let enemies = new Array();
+  let lives = new Array();
+  let enemiesHit = new Array();
 
 
   //handle keyboard input
@@ -170,6 +179,7 @@
 
   }
   function generatePlatform(texture){
+    //must be called after beginning platform sequence is created (i.e. platforms is not empty)
     let prevPlatform = platforms[platforms.length-1];
     let size = Math.floor(Math.random() *3);
     for (let i=0; i<=size; i++) {
@@ -201,49 +211,155 @@
     coins.push(coin);
     app.stage.addChild(coin);
   }
+  function generateEnemy(){
+    let enemyMap = ['bee','fly'];
+    let enemyNum = Math.floor(Math.random()*2);
+    let enemy = new Sprite(enemyTextures[enemyMap[enemyNum]+"FlyTextures"][0]);
+    enemy.height = enemy.width = spriteScale*.75;
+    enemy.name = enemyMap[enemyNum];
+    enemy.x = -spriteScale;
+    enemy.y = Math.floor(Math.random()* app.screen.height-spriteScale*2) + spriteScale;
+    enemy.vx = 1;
+    enemies.push(enemy);
+    app.stage.addChild(enemy);
+  }
+  function enemyHitSequence(){
+    let num=0;
+    while (num < enemiesHit.length){
+      let enemy = enemiesHit[num];
+      if (enemy.timeFromHit === 0){
+        if (enemy.name == "bee"){
+          enemy.texture = enemyTextures.beeHit;
+        }
+        else enemy.texture = enemyTextures.flyHit;
+        enemy.texture.rotate = 12;
+      }
+      else if (enemy.timeFromHit == 5){
+        app.stage.removeChild(enemy);
+        enemiesHit.splice(num, 1);
+        num--;
+      }
+      enemy.timeFromHit++
+      num++;
+    }
+  }
+
+  function startScreen(){
+    let p1Icon = new Sprite(Texture.from("p1_badge1.png"))
+    p1Icon.anchor.set(0.5);
+    p1Icon.x = app.screen.width *.5 - spriteScale*4;
+    p1Icon.interactive = true;
+    p1Icon.on("click", (event) => {
+      setup("p1");
+    });
+    p1Icon.on("mouseover", (event) => {
+      p1Icon.width = p1Icon.height = spriteScale*2;
+    });
+    p1Icon.on("mouseout", (event) => {
+      p1Icon.width = p1Icon.height = spriteScale*1.5;
+    });
+    let p2Icon = new Sprite(Texture.from("p2_badge1.png"))
+    p2Icon.anchor.set(0.5);
+    p2Icon.x = app.screen.width *.5 - spriteScale*2;
+    p2Icon.interactive = true;
+    p2Icon.on("click", (event) => {
+      setup("p2");
+    });
+    p2Icon.on("mouseover", (event) => {
+      p2Icon.width = p2Icon.height = spriteScale*2;
+    });
+    p2Icon.on("mouseout", (event) => {
+      p2Icon.width = p2Icon.height = spriteScale*1.5;
+    });
+    let p3Icon = new Sprite(Texture.from("p3_badge1.png"))
+    p3Icon.anchor.set(0.5);
+    p3Icon.x = app.screen.width *.5;
+    p3Icon.interactive = true;
+    p3Icon.on("click", (event) => {
+      setup("p3");
+    });
+    p3Icon.on("mouseover", (event) => {
+      p3Icon.width = p3Icon.height = spriteScale*2;
+    });
+    p3Icon.on("mouseout", (event) => {
+      p3Icon.width = p3Icon.height = spriteScale*1.5;
+    });
+    let p4Icon = new Sprite(Texture.from("p4_badge1.png"))
+    p4Icon.anchor.set(0.5);
+    p4Icon.x = app.screen.width *.5 + spriteScale*2;
+    p4Icon.interactive = true;
+    p4Icon.on("click", (event) => {
+      setup("p4");
+    });
+    p4Icon.on("mouseover", (event) => {
+      p4Icon.width = p4Icon.height = spriteScale*2;
+    });
+    p4Icon.on("mouseout", (event) => {
+      p4Icon.width = p4Icon.height = spriteScale*1.5;
+    });
+    let p5Icon = new Sprite(Texture.from("p5_badge1.png"))
+    p5Icon.anchor.set(0.5);
+    p5Icon.x = app.screen.width *.5 + spriteScale*4;
+    p5Icon.interactive = true;
+    p5Icon.on("click", (event) => {
+      setup("p5");
+    });
+    p5Icon.on("mouseover", (event) => {
+      p5Icon.width = p5Icon.height = spriteScale*2;
+    });
+    p5Icon.on("mouseout", (event) => {
+      p5Icon.width = p5Icon.height = spriteScale*1.5;
+    });
+
+    p1Icon.height = p1Icon.width = p2Icon.height = p2Icon.width = p3Icon.height = p3Icon.width = p4Icon.height = p4Icon.width = p5Icon.height = p5Icon.width = spriteScale*1.5;
+    p1Icon.y = p2Icon.y = p3Icon.y = p4Icon.y = p5Icon.y = app.screen.height*.5;
+    let displayInstructions = new PIXI.Text("Select a character to begin!", {fontFamily: "Odibee Sans", fontSize: 20, fill: 0xe6eefc, align:"center"});
+    displayInstructions.anchor.set(0.5);
+    displayInstructions.x = app.screen.width*.5;
+    displayInstructions.y = app.screen.height*.5 - spriteScale*2;
+
+    app.stage.addChild(p1Icon, p2Icon, p3Icon, p4Icon, p5Icon);
+    app.stage.addChild(displayInstructions);
+  }
 
   //This `setup` function will run when the image has loaded
-  function setup() {
+  function setup(playerNum) {
     time = 0;
     numCoinsCollected = 0;
 
     //load spritesheets
-    //playerSprites = Loader.shared.resources["Spritesheets/playerSprites.json"].spritesheet.textures;
+    //playerSprites = Loader.shared.resources["Spritesheets/playerSprites1.json"].spritesheet.textures;
     let p1WalkTextures = [];
-    let p2WalkTextures = [];
 
-    let animations = {
-      "p1_walk": ["p1_walk01.png","p1_walk02.png","p1_walk03.png","p1_walk04.png","p1_walk05.png","p1_walk06.png","p1_walk07.png","p1_walk08.png","p1_walk09.png","p1_walk10.png","p1_walk11.png"],
-      "p2_walk": ["p2_walk01.png","p2_walk02.png","p2_walk03.png","p2_walk04.png","p2_walk05.png","p2_walk06.png","p2_walk07.png","p2_walk08.png","p2_walk09.png","p2_walk10.png","p2_walk11.png"]
+  let animations = {
+      "p1_walk": [playerNum+"_walk1.png", playerNum+"_walk2.png"]
     };
 
-    for (i=0; i <= 10; i++){
+    for (let i=0; i < 2; i++){
       p1WalkTextures[i] = Texture.from(animations.p1_walk[i]);
-      p2WalkTextures[i] = Texture.from(animations.p2_walk[i]);
     }
 
     p1Textures= {"walkTextures" : p1WalkTextures,
-      "duck": Texture.from("p1_duck.png"),
-      "front": Texture.from("p1_front.png"),
-      "hurt": Texture.from("p1_hurt.png"),
-      "jump": Texture.from("p1_jump.png"),
-      "stand": Texture.from("p1_stand.png")};
+      "duck": Texture.from(playerNum +"_duck.png"),
+      "front": Texture.from(playerNum+"_front.png"),
+      "hurt": Texture.from(playerNum+"_hurt.png"),
+      "jump": Texture.from(playerNum+"_jump.png"),
+      "stand": Texture.from(playerNum+"_stand.png")};
 
-    p2Textures= {"walkTextures" : p2WalkTextures,
-      "duck": Texture.from("p2_duck.png"),
-      "front": Texture.from("p2_front.png"),
-      "hurt": Texture.from("p2_hurt.png"),
-      "jump": Texture.from("p2_jump.png"),
-      "stand": Texture.from("p2_stand.png")};
-
-    enemyAnimations = {
-      "e1Fly" : [],
-      "e2Fly" : []
+    enemyTextures = {
+      "beeFlyTextures" : [Texture.from("bee.png"), Texture.from("bee_fly.png")],
+      "beeHit" : Texture.from("bee_hit.png"),
+      "beeDead" : Texture.from("bee_dead.png"),
+      "flyFlyTextures" : [Texture.from("fly.png"), Texture.from("fly_fly.png")],
+      "flyHit" : Texture.from("bee_hit.png"),
+      "flyDead" : Texture.from("bee_dead.png"),
     }
-
+    enemyTextures.beeFlyTextures[0].rotate=12;
+    enemyTextures.beeFlyTextures[1].rotate=12;
+    enemyTextures.flyFlyTextures[0].rotate=12;
+    enemyTextures.flyFlyTextures[1].rotate=12;
 
     //vars
-    spriteScale = 20;
     let spriteScaleHeight = spriteScale + (spriteScale*.2);
 
     //---make sprites---
@@ -269,7 +385,6 @@
     arrowLeft.height = arrowLeft.width = arrowRight.height = arrowRight.width = spriteScale * 1.5;
     ground.addChild(arrowLeft, arrowRight);
 
-
     ground.y = app.screen.height - spriteScale*1.5;
 
 
@@ -289,7 +404,6 @@
       platforms.push(platform);
       app.stage.addChild(platform);
     }
-
     while (platforms[platforms.length-1].y > 0){
       generatePlatform(dirtTexture);
     }
@@ -315,14 +429,21 @@
 
     //exit
     exit = new Sprite( Texture.from("signExit.png"));
-    exit.y = -1000;
+    exit.y = -500;
     exit.x = app.screen.width*.5;
     exit.height = exit.width = spriteScale*2;
     exit.vy = 0;
 
-    //gem count
-    coinDisplay = new PIXI.Text("gems: " + numCoinsCollected, {fontSize: 15, fill: 0xe6eefc});
+    coinDisplay = new PIXI.Container();
 
+    //life count
+    for (let i=0; i < lifeCount; i++){
+      let life = new Sprite(Texture.from("hud_heartFull.png"));
+      life.height = life.width = spriteScale*.5;
+      life.y = 3;
+      life.x = app.screen.width - spriteScaleHeight*.5 - (i * (spriteScaleHeight*.6));
+      lives.push(life)
+    }
 
     //Add elements to stage
     app.stage.addChild(bg);
@@ -336,7 +457,9 @@
     app.stage.addChild(exit);
     app.stage.addChild(p1);
     app.stage.addChild(coinDisplay);
-    //app.stage.addChild(arrowLeft);
+    for (let i in lives){
+      app.stage.addChild(lives[i]);
+    }
 
 
     //listen for keyboard input
@@ -411,7 +534,7 @@
     //set game state
     state = play;
     //start game loop
-    app.ticker.add(delta => gameLoop(delta));
+    if (initialSetup) app.ticker.add(delta => gameLoop(delta));
   }
 
 
@@ -422,29 +545,6 @@
 
   function play(delta){
     time++;
-    //check collision and render coins
-    for (let i in coins){
-      if (testCollision(p1, coins[i])){
-        app.stage.removeChild(coins[i]);
-        coins.splice(i, 1);
-        numCoinsCollected++;
-      }
-    }
-    app.stage.removeChild(coinDisplay);
-    coinDisplay = new PIXI.Text("Gems: " + numCoinsCollected, {fontSize: 15, fill: 0xe6eefc});
-    coinDisplay.x = app.screen.width - coinDisplay.width;
-    app.stage.addChild(coinDisplay);
-
-    //generate platforms
-    let lastPlatY = platforms[platforms.length-1].y
-    if (lastPlatY >= 0 && lastPlatY >= exit.y){
-      generatePlatform(Texture.from("castleHalf.png"));
-    }
-
-    //move ground if necessary
-    if (ground.y < app.screen.height + spriteScale*10){
-        ground.y += ground.vy
-    }
 
     //determine platform speed
     let speed = p1.vy;
@@ -456,6 +556,77 @@
     else if (p1.y < app.screen.height * .6) speed = .5;
     else if (p1.y < app.screen.height * .7) speed = .4;
     else speed = .3;
+    console.log(speed)
+
+    //check collision and render coins
+    for (let i in coins){
+      if (testCollision(p1, coins[i])){
+        app.stage.removeChild(coins[i]);
+        coins.splice(i, 1);
+        numCoinsCollected++;
+      }
+    }
+
+    coinDisplay.removeChildren();
+    let gemDisplayIcon = new Sprite(Texture.from("gemYellow.png"));
+    gemDisplayIcon.width = gemDisplayIcon.height = spriteScale;
+    let gemCountMessage = new PIXI.Text("x " + numCoinsCollected, {fontFamily: "Odibee Sans", fontSize: 15, fill: 0xe6eefc});
+    gemDisplayIcon.y = 12;
+    gemCountMessage.y = 14;
+    gemDisplayIcon.x = app.screen.width - gemCountMessage.width - spriteScale;
+    gemCountMessage.x = app.screen.width - gemCountMessage.width - spriteScale*.1;
+    coinDisplay.addChild(gemDisplayIcon, gemCountMessage);
+
+    //generate platforms
+    let lastPlatY = platforms[platforms.length-1].y
+    if (lastPlatY >= 0 && lastPlatY >= exit.y){
+      generatePlatform(Texture.from("castleHalf.png"));
+    }
+
+    //move, generate enemies
+    if (Math.random() < .002){
+      if (p1.x > app.screen.width*.25) {
+        generateEnemy();
+      }
+    }
+    if (enemies.length > 0){
+      let cycle = Math.floor(Date.now() / 100) % 2;
+      let num=0;
+      while (num < enemies.length){
+        if (enemies[num].x > app.screen.width+spriteScale){
+          app.stage.removeChild(enemies[num]);
+          enemies.splice(num, 1);
+          continue;
+        }
+        let enemy = enemies[num];
+        if (testCollision(p1, enemy)){
+          lifeCount--;
+          app.stage.removeChild(lives[lives.length-1]);
+          lives.splice((lives.length-1),1);
+          enemies.splice(num, 1);
+          enemy.timeFromHit = 0;
+          enemiesHit.push(enemy);
+          continue;
+        }
+        enemy.x += enemy.vx;
+        enemy.y+=speed;
+        if (enemy.name == "bee") {
+          enemy.texture = enemyTextures.beeFlyTextures[cycle];
+        }
+        else if (enemy.name == "fly"){
+          enemy.texture = enemyTextures.flyFlyTextures[cycle];
+        }
+        num++;
+      }
+    }
+    if (enemiesHit.length > 0){
+      enemyHitSequence();
+    }
+
+    //move ground if necessary
+    if (ground.y < app.screen.height + spriteScale*10){
+        ground.y += ground.vy
+    }
 
     //move exit, coins, platforms
     exit.y += speed;
@@ -474,6 +645,8 @@
         num++;
       }
     }
+
+
     //Move player
     p1.x += p1.vx;
     p1.y += p1.vy;
@@ -485,7 +658,6 @@
     else if (p1.x <= 0){
       p1.x = app.screen.width;
     }
-
 
     //jumping
     if (p1.vy !== 0){
@@ -499,7 +671,7 @@
     }
     //walking
     else if (p1.vx !== 0){
-      let cycle = Math.floor(Date.now() / 100) % 4;
+      let cycle = Math.floor(Date.now()/200) % 2;
       p1.texture = p1Textures.walkTextures[cycle];
       //right
       if (p1.vx > 0){
@@ -511,9 +683,8 @@
       }
     }
 
+    //handle jump dynamics
     let playerBottom = p1.y + p1.height*.5;
-
-
     if (p1.jumping){
       if (p1.y <= p1.jumpHeight){
         if (p1.hangtime === 0){
@@ -562,10 +733,18 @@
       }
     }
 
+    if (lifeCount <= 0){
+      p1.texture = p1Textures.hurt;
+      p1.vy = 8;
+    }
+
     //end game sequence
     if (playerBottom >= app.screen.height+spriteScale/2) {
       app.stage.removeChildren();
-      let displayMessage = new PIXI.Text("Game Over!", {fontSize: 18, fill: 0xe6eefc});
+      let displayMessage = new PIXI.Text("game over!\nyou didn't make it to the ship\n\n <enter> to try again", {fontFamily: "Odibee Sans", fontSize: 25, fill: 0xe6eefc, align:"center"});
+      displayMessage.anchor.set(0.5);
+      displayMessage.y = app.screen.height*.5;
+      displayMessage.x = app.screen.width*.5;
       app.stage.addChild(displayMessage);
       state= end;
     }
@@ -574,13 +753,13 @@
       let wonMessage = "You won!\n\n";
       //get score
       let timeBonus = 0;
-      if (time < 3000) timeBonus = 3000-time;
+      if (time < 12000) timeBonus = 12000-time;
 
       let coinBonus = numCoinsCollected * 50;
       let score = 100 + timeBonus + coinBonus;
-      let scoreMessage = "Score: " + score + "\n  reached ship: 100\n  time bonus: " + timeBonus + "\n  coin bonus: " + numCoinsCollected + " x 50 = " + coinBonus + "\n";
+      let scoreMessage = "Score: " + score + "\n  reached ship: 100\n  time bonus: " + timeBonus + "\n  gem bonus: " + numCoinsCollected + " x 50 = " + coinBonus + "\n";
 
-      let displayMessage = new PIXI.Text(wonMessage + scoreMessage, {fontSize: 15, fill: 0xe6eefc});
+      let displayMessage = new PIXI.Text(wonMessage + scoreMessage, {fontFamily: "Odibee Sans", fontSize: 20, fill: 0xe6eefc});
       displayMessage.anchor.set(0.5);
       displayMessage.y = app.screen.height*.5;
       displayMessage.x = app.screen.width*.5;
@@ -591,6 +770,27 @@
   }
 
   function end(){
+    let restart = keyboard("Enter");
+    restart.subscribe();
+    restart.press = () => {
+      //define vars
+      //ground.y = 100;
+      //exit.y = 500;
+      //time = 0;
+      //numCoinsCollected=0;
+      lifeCount = 3;
+      up.unsubscribe();
+      left.unsubscribe();
+      right.unsubscribe();
+      down.unsubscribe();
+      platforms = new Array();
+      coins = new Array();
+      enemies = new Array();
+      lives = new Array();
+      enemiesHit = new Array();
+      initialSetup = false;
+      setup("p1");
+    }
 
   }
 
