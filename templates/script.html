@@ -46,10 +46,11 @@
     .load(startScreen);
 
   //define vars
-  let p1, ground, exit, state, p1Textures, enemyTextures, time, numCoinsCollected, coinDisplay;
+  let p1, ground, exit, bg, state, p1Textures, enemyTextures, time, numCoinsCollected, coinDisplay, arrowLeft, arrowRight, startGems;
+  let speed = 0;
   let spriteScale = 20;
+  let spriteScaleHeight = spriteScale + (spriteScale*.2);;
   let lifeCount = 3;
-  let initialSetup = true;
   let left, right, up, down;
   let platforms = new Array();
   let coins = new Array();
@@ -243,97 +244,140 @@
       num++;
     }
   }
+  function playerMovementDynamics(){
+    //Move player
+    p1.x += p1.vx;
+    p1.y += p1.vy;
 
-  function startScreen(){
-    let p1Icon = new Sprite(Texture.from("p1_badge1.png"))
-    p1Icon.anchor.set(0.5);
-    p1Icon.x = app.screen.width *.5 - spriteScale*4;
-    p1Icon.interactive = true;
-    p1Icon.on("click", (event) => {
-      setup("p1");
-    });
-    p1Icon.on("mouseover", (event) => {
-      p1Icon.width = p1Icon.height = spriteScale*2;
-    });
-    p1Icon.on("mouseout", (event) => {
-      p1Icon.width = p1Icon.height = spriteScale*1.5;
-    });
-    let p2Icon = new Sprite(Texture.from("p2_badge1.png"))
-    p2Icon.anchor.set(0.5);
-    p2Icon.x = app.screen.width *.5 - spriteScale*2;
-    p2Icon.interactive = true;
-    p2Icon.on("click", (event) => {
-      setup("p2");
-    });
-    p2Icon.on("mouseover", (event) => {
-      p2Icon.width = p2Icon.height = spriteScale*2;
-    });
-    p2Icon.on("mouseout", (event) => {
-      p2Icon.width = p2Icon.height = spriteScale*1.5;
-    });
-    let p3Icon = new Sprite(Texture.from("p3_badge1.png"))
-    p3Icon.anchor.set(0.5);
-    p3Icon.x = app.screen.width *.5;
-    p3Icon.interactive = true;
-    p3Icon.on("click", (event) => {
-      setup("p3");
-    });
-    p3Icon.on("mouseover", (event) => {
-      p3Icon.width = p3Icon.height = spriteScale*2;
-    });
-    p3Icon.on("mouseout", (event) => {
-      p3Icon.width = p3Icon.height = spriteScale*1.5;
-    });
-    let p4Icon = new Sprite(Texture.from("p4_badge1.png"))
-    p4Icon.anchor.set(0.5);
-    p4Icon.x = app.screen.width *.5 + spriteScale*2;
-    p4Icon.interactive = true;
-    p4Icon.on("click", (event) => {
-      setup("p4");
-    });
-    p4Icon.on("mouseover", (event) => {
-      p4Icon.width = p4Icon.height = spriteScale*2;
-    });
-    p4Icon.on("mouseout", (event) => {
-      p4Icon.width = p4Icon.height = spriteScale*1.5;
-    });
-    let p5Icon = new Sprite(Texture.from("p5_badge1.png"))
-    p5Icon.anchor.set(0.5);
-    p5Icon.x = app.screen.width *.5 + spriteScale*4;
-    p5Icon.interactive = true;
-    p5Icon.on("click", (event) => {
-      setup("p5");
-    });
-    p5Icon.on("mouseover", (event) => {
-      p5Icon.width = p5Icon.height = spriteScale*2;
-    });
-    p5Icon.on("mouseout", (event) => {
-      p5Icon.width = p5Icon.height = spriteScale*1.5;
-    });
 
-    p1Icon.height = p1Icon.width = p2Icon.height = p2Icon.width = p3Icon.height = p3Icon.width = p4Icon.height = p4Icon.width = p5Icon.height = p5Icon.width = spriteScale*1.5;
-    p1Icon.y = p2Icon.y = p3Icon.y = p4Icon.y = p5Icon.y = app.screen.height*.5;
-    let displayInstructions = new PIXI.Text("Select a character to begin!", {fontFamily: "Odibee Sans", fontSize: 20, fill: 0xe6eefc, align:"center"});
-    displayInstructions.anchor.set(0.5);
-    displayInstructions.x = app.screen.width*.5;
-    displayInstructions.y = app.screen.height*.5 - spriteScale*2;
+    //screen wrap (player going off right appears on left, vice versa)
+    if (p1.x >= app.screen.width){
+      p1.x = 0;
+    }
+    else if (p1.x <= 0){
+      p1.x = app.screen.width;
+    }
 
-    app.stage.addChild(p1Icon, p2Icon, p3Icon, p4Icon, p5Icon);
-    app.stage.addChild(displayInstructions);
+    //jumping
+    if (p1.vy !== 0){
+      p1.texture = p1Textures.jump;
+      if (p1.vx < 0){   //moving left
+        p1.texture.rotate = 12;
+      }
+      else {
+        p1.texture.rotate = 0;
+      }
+    }
+    //walking
+    else if (p1.vx !== 0){
+      let cycle = Math.floor(Date.now()/200) % 2;
+      p1.texture = p1Textures.walkTextures[cycle];
+      //right
+      if (p1.vx > 0){
+        p1.texture.rotate = 0;
+      }
+      //left
+      else {
+        p1.texture.rotate = 12;
+      }
+    }
+    //handle jump dynamics
+    let playerBottom = p1.y + p1.height*.5;
+    if (p1.jumping){
+      if (p1.y <= p1.jumpHeight){
+        if (p1.hangtime === 0){
+          p1.jumpHeight = null;
+          p1.vy = 8;
+        }
+        else{
+          p1.hangtime -= 1;
+          if (p1.hangtime >= 6){
+            p1.vy = -1;
+          }
+          else{
+            p1.vy = 1;
+          }
+        }
+      }
+      //test for collisions
+      else if (playerBottom >= ground.y){
+        p1.vy = 0;
+        p1.jumping = false;
+        p1.surfaceOn = ground;
+        p1.y = ground.y - spriteScale*1.1;
+        p1.texture = p1Textures.stand;
+        up.subscribe();
+        down.subscribe();
+      }
+      else if (p1.vy > 0){
+        for (let i in platforms){
+          let surface = platforms[i];
+          testLanding(p1, surface);
+        }
+      }
+    }
+
+    else if (p1.surfaceOn !== null){
+      //player must be on a surface, or just leaving (falling)
+      if (p1.surfaceOn != ground) p1.y += speed;
+      else if (speed != 0) p1.y += .1;
+
+      if ((playerBottom < ground.y-11) && (!testCollision(p1, p1.surfaceOn))){ //player not touching ground, or no longer touching the current surface
+        p1.surfaceOn = null;
+        p1.jumping = true;
+        p1.texture = p1Textures.jump;
+        p1.jumpHeight = p1.y;
+        down.unsubscribe();
+      }
+    }
+
+    //check collision and render coins
+    for (let i in startGems){
+      if (testCollision(p1, startGems[i])){
+        app.stage.removeChild(startGems[i]);
+        startGems.splice(i, 1);
+      }
+    }
+
+
   }
 
-  //This `setup` function will run when the image has loaded
-  function setup(playerNum) {
-    time = 0;
-    numCoinsCollected = 0;
+  function initializeMainStartElements(){
+    //ground
+    ground = new PIXI.Container();
+    ground.vy = .1;
+    for (let i = 0; i < app.screen.width / spriteScale + 1; i++){
+      let grass = new Sprite(Texture.from("grassMid.png"));
+      let dirt = new Sprite(Texture.from("grassCenter.png"));
+      grass.height = grass.width = dirt.height = dirt.width = spriteScale;
+      dirt.y = ground.y + spriteScale-1;
+      grass.x = dirt.x = i * spriteScale;
+      ground.addChild(grass, dirt);
+    }
+     ground.y = app.screen.height - spriteScale*1.4;
+    //direction arrows
+    arrowLeft = new Sprite(Texture.from("signLeft.png"))
+    arrowRight = new Sprite(Texture.from("signRight.png"))
+    arrowLeft.anchor.set(0.5);
+    arrowRight.anchor.set(0.5);
+    arrowLeft.x = 20
+    arrowRight.x = app.screen.width - spriteScale;
+    arrowLeft.y = arrowRight.y = ground.y - spriteScale*1.25;
+    arrowLeft.height = arrowLeft.width = arrowRight.height = arrowRight.width = spriteScale * 1.5;
+    ground.addChild(arrowLeft, arrowRight);
 
-    //load spritesheets
-    //playerSprites = Loader.shared.resources["Spritesheets/playerSprites1.json"].spritesheet.textures;
+
+
+
+    bg = new Sprite(Loader.shared.resources["Spritesheets/backgrounds/bg1.png"].texture);
+    bg.height = bg.width = 1000;
+
     let p1WalkTextures = [];
 
-  let animations = {
-      "p1_walk": [playerNum+"_walk1.png", playerNum+"_walk2.png"]
-    };
+    playerNum = "p1";
+    let animations = {
+        "p1_walk": [playerNum+"_walk1.png", playerNum+"_walk2.png"]
+      };
 
     for (let i=0; i < 2; i++){
       p1WalkTextures[i] = Texture.from(animations.p1_walk[i]);
@@ -346,79 +390,17 @@
       "jump": Texture.from(playerNum+"_jump.png"),
       "stand": Texture.from(playerNum+"_stand.png")};
 
-    enemyTextures = {
-      "beeFlyTextures" : [Texture.from("bee.png"), Texture.from("bee_fly.png")],
-      "beeHit" : Texture.from("bee_hit.png"),
-      "beeDead" : Texture.from("bee_dead.png"),
-      "flyFlyTextures" : [Texture.from("fly.png"), Texture.from("fly_fly.png")],
-      "flyHit" : Texture.from("bee_hit.png"),
-      "flyDead" : Texture.from("bee_dead.png"),
-    }
-    enemyTextures.beeFlyTextures[0].rotate=12;
-    enemyTextures.beeFlyTextures[1].rotate=12;
-    enemyTextures.flyFlyTextures[0].rotate=12;
-    enemyTextures.flyFlyTextures[1].rotate=12;
-
-    //vars
-    let spriteScaleHeight = spriteScale + (spriteScale*.2);
-
-    //---make sprites---
-    //ground
-    ground = new PIXI.Container();
-    ground.vy = .1;
-    for (let i = 0; i < app.screen.width / spriteScale + 1; i++){
-      let grass = new Sprite(Texture.from("grassMid.png"));
-      let dirt = new Sprite(Texture.from("grassCenter.png"));
-      grass.height = grass.width = dirt.height = dirt.width = spriteScale;
-      dirt.y = ground.y + spriteScale-1;
-      grass.x = dirt.x = i * spriteScale;
-      ground.addChild(grass, dirt);
-    }
-    //direction arrows
-    let arrowLeft = new Sprite(Texture.from("signLeft.png"))
-    let arrowRight = new Sprite(Texture.from("signRight.png"))
-    arrowLeft.anchor.set(0.5);
-    arrowRight.anchor.set(0.5);
-    arrowLeft.x = 20
-    arrowRight.x = app.screen.width - spriteScale;
-    arrowLeft.y = arrowRight.y = ground.y - spriteScale*1.25;
-    arrowLeft.height = arrowLeft.width = arrowRight.height = arrowRight.width = spriteScale * 1.5;
-    ground.addChild(arrowLeft, arrowRight);
-
-    ground.y = app.screen.height - spriteScale*1.5;
-
-
-    let bg = new Sprite(Loader.shared.resources["Spritesheets/backgrounds/bg1.png"].texture);
-    bg.height = bg.width = 1000;
-
-    // platforms
-    let dirtTexture = Texture.from("castleHalf.png");
-
-   //create starting platform
-    for (let i=0; i<2; i++){
-      let platform = new Sprite(Texture.from("grassHalf.png"));
-      platform.y = app.screen.height*.75;
-      platform.x = spriteScale*i + spriteScale*.5;
-      platform.width = spriteScale;
-      platform.height = spriteScale*.5;
-      platforms.push(platform);
-      app.stage.addChild(platform);
-    }
-    while (platforms[platforms.length-1].y > 0){
-      generatePlatform(dirtTexture);
-    }
-
     // p1
-    p1 = new Sprite(p1Textures.front);
+    p1 = new Sprite(Texture.from(playerNum+"_front.png"));
     p1.anchor.set(0.5);
     p1.height = spriteScaleHeight;
     p1.width = spriteScale;
     p1.y = app.screen.height*.75 - spriteScaleHeight;
-    p1.x=spriteScale;
+    p1.x=app.screen.width*.5;
     p1._zIndex = 100000
     p1.vx = 0;
     p1.vy = 0;
-    p1.surfaceOn = platforms[0];
+    p1.surfaceOn = ground;
     p1.jumping = false;
     p1.jumpHeight = p1.y;
     p1.hangtime = 0;
@@ -426,41 +408,6 @@
     p1.bottom = p1.y + p1.height*.5;
     p1.left = p1.x - p1.width*.5;
     p1.right = p1.x + p1.width*.5;
-
-    //exit
-    exit = new Sprite( Texture.from("signExit.png"));
-    exit.y = -500;
-    exit.x = app.screen.width*.5;
-    exit.height = exit.width = spriteScale*2;
-    exit.vy = 0;
-
-    coinDisplay = new PIXI.Container();
-
-    //life count
-    for (let i=0; i < lifeCount; i++){
-      let life = new Sprite(Texture.from("hud_heartFull.png"));
-      life.height = life.width = spriteScale*.5;
-      life.y = 3;
-      life.x = app.screen.width - spriteScaleHeight*.5 - (i * (spriteScaleHeight*.6));
-      lives.push(life)
-    }
-
-    //Add elements to stage
-    app.stage.addChild(bg);
-    app.stage.addChild(ground);
-    for (i in platforms){
-      app.stage.addChild(platforms[i]);
-    }
-    for (i in coins){
-      app.stage.addChild(coins[i]);
-    }
-    app.stage.addChild(exit);
-    app.stage.addChild(p1);
-    app.stage.addChild(coinDisplay);
-    for (let i in lives){
-      app.stage.addChild(lives[i]);
-    }
-
 
     //listen for keyboard input
     left = keyboard("ArrowLeft"),
@@ -531,11 +478,292 @@
     }
 
 
+
+  }
+
+  function startScreen(){
+    let p1Name = new PIXI.Text("Zemi the Adventurer", {fontFamily: "Odibee Sans", fontSize: 18, fill: 0xe6eefc, align:"center"});
+    p1Name.anchor.set(0.5);
+    let p2Name = new PIXI.Text("Zoki the Brave", {fontFamily: "Odibee Sans", fontSize: 18, fill: 0xe6eefc, align:"center"});
+    p2Name.anchor.set(0.5);
+    let p3Name = new PIXI.Text("Zamu the Cunning", {fontFamily: "Odibee Sans", fontSize: 18, fill: 0xe6eefc, align:"center"});
+    p3Name.anchor.set(0.5);
+    let p4Name = new PIXI.Text("Zorp the Destroyer", {fontFamily: "Odibee Sans", fontSize: 18, fill: 0xe6eefc, align:"center"});
+    p4Name.anchor.set(0.5);
+    let p5Name = new PIXI.Text("Ziti the Explorer", {fontFamily: "Odibee Sans", fontSize: 18, fill: 0xe6eefc, align:"center"});
+    p5Name.anchor.set(0.5);
+
+    let p1Icon = new Sprite(Texture.from("p1_badge1.png"))
+    p1Icon.anchor.set(0.5);
+    p1Icon.x = p1Name.x = app.screen.width *.5 - spriteScale*4;
+
+    let p2Icon = new Sprite(Texture.from("p2_badge1.png"))
+    p2Icon.anchor.set(0.5);
+    p2Icon.x = p2Name.x = app.screen.width *.5 - spriteScale*2;
+
+    let p3Icon = new Sprite(Texture.from("p3_badge1.png"))
+    p3Icon.anchor.set(0.5);
+    p3Icon.x = p3Name.x = app.screen.width *.5;
+
+    let p4Icon = new Sprite(Texture.from("p4_badge1.png"))
+    p4Icon.anchor.set(0.5);
+    p4Icon.x = p4Name.x = app.screen.width *.5 + spriteScale*2;
+
+    let p5Icon = new Sprite(Texture.from("p5_badge1.png"))
+    p5Icon.anchor.set(0.5);
+    p5Icon.x = p5Name.x = app.screen.width *.5 + spriteScale*4;
+
+
+    p1Icon.height = p1Icon.width = spriteScale*2;
+    p2Icon.height = p2Icon.width = p3Icon.height = p3Icon.width = p4Icon.height = p4Icon.width = p5Icon.height = p5Icon.width = spriteScale*1.5;
+    p1Icon.y = p2Icon.y = p3Icon.y = p4Icon.y = p5Icon.y = app.screen.height*.45;
+    let intro = new PIXI.Text("SPACE JUMP", {fontFamily: "Odibee Sans", fontSize: 40, fill: 0xe6eefc, align:"center"});
+    let objective = new PIXI.Text("collect gems and reach the spaceship!", {fontFamily: "Odibee Sans", fontSize: 25, fill: 0xe6eefc, align:"center"});
+    let displayInstructions = new PIXI.Text("<space> to toggle characters\n<enter> to begin game", {fontFamily: "Odibee Sans", fontSize: 18, fill: 0xe6eefc, align:"center"});
+    displayInstructions.anchor.set(0.5);
+    intro.anchor.set(0.5);
+    objective.anchor.set(0.5);
+    displayInstructions.x = intro.x = objective.x =  app.screen.width*.5;
+    displayInstructions.y = app.screen.height*.5 + spriteScale*2.5;
+    intro.y = app.screen.height*.2;
+    objective.y = app.screen.height*.3;
+
+
+    let players = [p1Icon, p2Icon, p3Icon, p4Icon, p5Icon];
+    let num = 0;
+    let icon = players[num];
+    let space = keyboard(" ");
+    space.subscribe();
+    space.press = () => {
+      num = (num+1) % 5;
+      icon = players[num];
+      icon.width = icon.height = spriteScale*2;
+      if (num === 0) oldIconNum = 4;
+      else oldIconNum = num-1;
+      players[oldIconNum].width = players[oldIconNum].height = spriteScale*1.5;
+    }
+    let enter = keyboard("Enter");
+    enter.subscribe();
+    enter.press = () => {
+      setup("p"+(num+1));
+    }
+
+    initializeMainStartElements();
+
+    //create gems
+    let gemTexture = Texture.from("gemYellow.png");
+    startGems = new  Array();
+    for (let i=0; i<19; i++){
+      gem = new Sprite(gemTexture);
+      gem.anchor.set(0.5);
+      gem.height = gem.width = spriteScale*.9;
+      if (i < 5){
+        gem.y = ground.y - spriteScale;
+        gem.x = 150 + i*spriteScale;
+      }
+      else if (i < 9){
+        gem.y = startGems[i-1].y - spriteScale*.9;
+        gem.x = startGems[i-1].x + i*2;
+      }
+      else if (i < 10){
+        gem.y = startGems[8].y - spriteScale*.5;
+        gem.x = startGems[i-1].x + spriteScale*.8;
+      }
+      else{
+        let num = 19-i;
+        gem.y = startGems[num].y;
+        gem.x = app.screen.width - startGems[num].x;
+        //console.log(gem.x, gem.y, startGems[num])
+      }
+      startGems.push(gem);
+    }
+
+    app.stage.addChild(bg, p1Icon, p2Icon, p3Icon, p4Icon, p5Icon, ground, arrowLeft, arrowRight, p1);
+    app.stage.addChild(displayInstructions, intro, objective);
+    for (let i in startGems){
+      app.stage.addChild(startGems[i]);
+    }
+
+    //start game loop
+    state = playerMovementDynamics
+    app.ticker.add(delta => gameLoop(delta));
+  }
+
+  //This `setup` function will run when the image has loaded
+  function setup(playerNum) {
+    time = 0;
+    numCoinsCollected = 0;
+
+    //load spritesheets
+    //playerSprites = Loader.shared.resources["Spritesheets/playerSprites1.json"].spritesheet.textures;
+    let p1WalkTextures = [];
+
+    let animations = {
+        "p1_walk": [playerNum+"_walk1.png", playerNum+"_walk2.png"]
+      };
+
+    for (let i=0; i < 2; i++){
+      p1WalkTextures[i] = Texture.from(animations.p1_walk[i]);
+    }
+
+    p1Textures= {"walkTextures" : p1WalkTextures,
+      "duck": Texture.from(playerNum +"_duck.png"),
+      "front": Texture.from(playerNum+"_front.png"),
+      "hurt": Texture.from(playerNum+"_hurt.png"),
+      "jump": Texture.from(playerNum+"_jump.png"),
+      "stand": Texture.from(playerNum+"_stand.png")};
+
+    enemyTextures = {
+      "beeFlyTextures" : [Texture.from("bee.png"), Texture.from("bee_fly.png")],
+      "beeHit" : Texture.from("bee_hit.png"),
+      "beeDead" : Texture.from("bee_dead.png"),
+      "flyFlyTextures" : [Texture.from("fly.png"), Texture.from("fly_fly.png")],
+      "flyHit" : Texture.from("bee_hit.png"),
+      "flyDead" : Texture.from("bee_dead.png"),
+    }
+    enemyTextures.beeFlyTextures[0].rotate=12;
+    enemyTextures.beeFlyTextures[1].rotate=12;
+    enemyTextures.flyFlyTextures[0].rotate=12;
+    enemyTextures.flyFlyTextures[1].rotate=12;
+
+
+    //---make sprites---
+    // platforms
+    let dirtTexture = Texture.from("castleHalf.png");
+
+   //create starting platform
+    for (let i=0; i<2; i++){
+      let platform = new Sprite(Texture.from("grassHalf.png"));
+      platform.y = app.screen.height*.75;
+      platform.x = spriteScale*i + spriteScale*.5;
+      platform.width = spriteScale;
+      platform.height = spriteScale*.5;
+      platforms.push(platform);
+      app.stage.addChild(platform);
+    }
+    while (platforms[platforms.length-1].y > 0){
+      generatePlatform(dirtTexture);
+    }
+
+    p1.x = spriteScale;
+    p1.y = app.screen.height*.75 - spriteScaleHeight;
+    p1.texture = p1Textures.stand;
+
+    //exit
+    exit = new Sprite( Texture.from("signExit.png"));
+    exit.y = -500;
+    exit.x = app.screen.width*.5;
+    exit.height = exit.width = spriteScale*2;
+    exit.vy = 0;
+
+    coinDisplay = new PIXI.Container();
+
+    //life count
+    for (let i=0; i < lifeCount; i++){
+      let life = new Sprite(Texture.from("hud_heartFull.png"));
+      life.height = life.width = spriteScale*.5;
+      life.y = 3;
+      life.x = app.screen.width - spriteScaleHeight*.5 - (i * (spriteScaleHeight*.6));
+      lives.push(life)
+    }
+
+    //Add elements to stage
+    app.stage.addChild(bg);
+    app.stage.addChild(ground);
+    for (i in platforms){
+      app.stage.addChild(platforms[i]);
+    }
+    for (i in coins){
+      app.stage.addChild(coins[i]);
+    }
+    app.stage.addChild(exit);
+    app.stage.addChild(p1);
+    app.stage.addChild(coinDisplay);
+    for (let i in lives){
+      app.stage.addChild(lives[i]);
+    }
+
+
+
     //set game state
     state = play;
-    //start game loop
-    if (initialSetup) app.ticker.add(delta => gameLoop(delta));
   }
+
+  function reset(){
+    time = 0;
+    numCoinsCollected = 0;
+    ground.y = app.screen.height - spriteScale*1.5;
+    platforms.splice(0, platforms.length);
+    coins.splice(0, coins.length);
+
+    //create starting platform
+    for (let i=0; i<2; i++){
+      let platform = new Sprite(Texture.from("grassHalf.png"));
+      platform.y = app.screen.height*.75;
+      platform.x = spriteScale*i + spriteScale*.5;
+      platform.width = spriteScale;
+      platform.height = spriteScale*.5;
+      platforms.push(platform);
+      app.stage.addChild(platform);
+    }
+
+    let dirtTexture =  Texture.from("castleHalf.png");
+    while (platforms[platforms.length-1].y > 0){
+      generatePlatform(dirtTexture);
+    }
+
+    //reposition player, exit
+    p1.y = app.screen.height*.75 - spriteScaleHeight;
+    p1.x=spriteScale;
+    p1._zIndex = 100000
+    p1.vx = 0;
+    p1.vy = 0;
+    p1.surfaceOn = platforms[0];
+    p1.jumping = false;
+    p1.jumpHeight = p1.y;
+    p1.hangtime = 0;
+    p1.top = p1.y - p1.height*.5;
+    p1.bottom = p1.y + p1.height*.5;
+    p1.left = p1.x - p1.width*.5;
+    p1.right = p1.x + p1.width*.5;
+    //exit
+    exit.y = -500;
+    exit.x = app.screen.width*.5;
+    exit.vy = 0;
+
+    //reset life count
+    lives.splice(0, lives.length);
+    lifeCount = 3;
+    for (let i=0; i < lifeCount; i++){
+      let life = new Sprite(Texture.from("hud_heartFull.png"));
+      life.height = life.width = spriteScale*.5;
+      life.y = 3;
+      life.x = app.screen.width - spriteScaleHeight*.5 - (i * (spriteScaleHeight*.6));
+      lives.push(life)
+    }
+
+    //Add elements to stage
+    app.stage.addChild(bg);
+    app.stage.addChild(ground);
+    for (i in platforms){
+      app.stage.addChild(platforms[i]);
+    }
+    for (i in coins){
+      app.stage.addChild(coins[i]);
+    }
+    app.stage.addChild(exit);
+    app.stage.addChild(p1);
+    app.stage.addChild(coinDisplay);
+    for (let i in lives){
+      app.stage.addChild(lives[i]);
+    }
+
+    state=play;
+
+
+  }
+
+
 
 
   function gameLoop(delta) {
@@ -547,7 +775,7 @@
     time++;
 
     //determine platform speed
-    let speed = p1.vy;
+    speed = p1.vy;
     if (p1.y < app.screen.height * .1) speed = 1;
     else if (p1.y < app.screen.height * .2) speed = .9;
     else if (p1.y < app.screen.height * .3) speed = .8;
@@ -556,7 +784,6 @@
     else if (p1.y < app.screen.height * .6) speed = .5;
     else if (p1.y < app.screen.height * .7) speed = .4;
     else speed = .3;
-    console.log(speed)
 
     //check collision and render coins
     for (let i in coins){
@@ -646,98 +873,14 @@
       }
     }
 
-
-    //Move player
-    p1.x += p1.vx;
-    p1.y += p1.vy;
-
-    //screen wrap (player going off right appears on left, vice versa)
-    if (p1.x >= app.screen.width){
-      p1.x = 0;
-    }
-    else if (p1.x <= 0){
-      p1.x = app.screen.width;
-    }
-
-    //jumping
-    if (p1.vy !== 0){
-      p1.texture = p1Textures.jump;
-      if (p1.vx < 0){   //moving left
-        p1.texture.rotate = 12;
-      }
-      else {
-        p1.texture.rotate = 0;
-      }
-    }
-    //walking
-    else if (p1.vx !== 0){
-      let cycle = Math.floor(Date.now()/200) % 2;
-      p1.texture = p1Textures.walkTextures[cycle];
-      //right
-      if (p1.vx > 0){
-        p1.texture.rotate = 0;
-      }
-      //left
-      else {
-        p1.texture.rotate = 12;
-      }
-    }
-
-    //handle jump dynamics
-    let playerBottom = p1.y + p1.height*.5;
-    if (p1.jumping){
-      if (p1.y <= p1.jumpHeight){
-        if (p1.hangtime === 0){
-          p1.jumpHeight = null;
-          p1.vy = 8;
-        }
-        else{
-          p1.hangtime -= 1;
-          if (p1.hangtime >= 6){
-            p1.vy = -1;
-          }
-          else{
-            p1.vy = 1;
-          }
-        }
-      }
-      //test for collisions
-      else if (playerBottom >= ground.y){
-        p1.vy = 0;
-        p1.jumping = false;
-        p1.surfaceOn = ground;
-        p1.y = ground.y - spriteScale*1.1;
-        p1.texture = p1Textures.stand;
-        up.subscribe();
-        down.subscribe();
-      }
-      else if (p1.vy > 0){
-        for (let i in platforms){
-          let surface = platforms[i];
-          testLanding(p1, surface);
-        }
-      }
-    }
-
-    else if (p1.surfaceOn !== null){
-      //player must be on a surface, or just leaving (falling)
-      if (p1.surfaceOn != ground) p1.y += speed;
-      else (p1.y += .1);
-
-      if ((playerBottom < ground.y-11) && (!testCollision(p1, p1.surfaceOn))){ //player not touching ground, or no longer touching the current surface
-        p1.surfaceOn = null;
-        p1.jumping = true;
-        p1.texture = p1Textures.jump;
-        p1.jumpHeight = p1.y;
-        down.unsubscribe();
-      }
-    }
+    playerMovementDynamics(speed);
 
     if (lifeCount <= 0){
       p1.texture = p1Textures.hurt;
       p1.vy = 8;
     }
 
+    playerBottom = p1.y + p1.height*.5;
     //end game sequence
     if (playerBottom >= app.screen.height+spriteScale/2) {
       app.stage.removeChildren();
@@ -750,46 +893,36 @@
     }
     else if (exit.y > 0 && p1.y <= exit.y){
       app.stage.removeChildren();
-      let wonMessage = "You won!\n\n";
+      let wonMessage = "You made it!\n\n";
       //get score
       let timeBonus = 0;
       if (time < 12000) timeBonus = 12000-time;
-
       let coinBonus = numCoinsCollected * 50;
-      let score = 100 + timeBonus + coinBonus;
-      let scoreMessage = "Score: " + score + "\n  reached ship: 100\n  time bonus: " + timeBonus + "\n  gem bonus: " + numCoinsCollected + " x 50 = " + coinBonus + "\n";
-
-      let displayMessage = new PIXI.Text(wonMessage + scoreMessage, {fontFamily: "Odibee Sans", fontSize: 20, fill: 0xe6eefc});
+      let score = 1000 + timeBonus + coinBonus;
+      let scoreMessage = "-------------------------\nSCORE: " +score
+              + "\n-------------------------\n   ship reached: 1000\n   time bonus: "+timeBonus+"\n   gem bonus ("+numCoinsCollected+"x50): "
+              + coinBonus + "\n\n <enter> to play again";
+      let wonDisplay = new PIXI.Text(wonMessage, {fontFamily: "Odibee Sans", fontSize: 20, fill: 0xe6eefc, align:"center"});
+      wonDisplay.anchor.set(0.5);
+      let displayMessage = new PIXI.Text( scoreMessage, {fontFamily: "Odibee Sans", fontSize: 20, fill: 0xe6eefc});
       displayMessage.anchor.set(0.5);
       displayMessage.y = app.screen.height*.5;
-      displayMessage.x = app.screen.width*.5;
-      app.stage.addChild(displayMessage);
+      displayMessage.x = wonDisplay.x = app.screen.width*.5;
+      wonDisplay.y = displayMessage.y - displayMessage.height*.5 - spriteScale;
+      app.stage.addChild(displayMessage, wonDisplay);
 
       state = end;
     }
+
   }
 
   function end(){
     let restart = keyboard("Enter");
     restart.subscribe();
     restart.press = () => {
-      //define vars
-      //ground.y = 100;
-      //exit.y = 500;
-      //time = 0;
-      //numCoinsCollected=0;
-      lifeCount = 3;
-      up.unsubscribe();
-      left.unsubscribe();
-      right.unsubscribe();
-      down.unsubscribe();
-      platforms = new Array();
-      coins = new Array();
-      enemies = new Array();
-      lives = new Array();
-      enemiesHit = new Array();
-      initialSetup = false;
-      setup("p1");
+      app.stage.removeChildren();
+      restart.unsubscribe();
+      reset();
     }
 
   }
