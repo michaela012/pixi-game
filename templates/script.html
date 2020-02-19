@@ -323,7 +323,7 @@
       if (p1.surfaceOn != ground) p1.y += speed;
       else if (speed != 0) p1.y += .1;
 
-      if ((playerBottom < ground.y-11) && (!testCollision(p1, p1.surfaceOn))){ //player not touching ground, or no longer touching the current surface
+      if ((playerBottom < ground.y-(spriteScale*.5)) && (!testCollision(p1, p1.surfaceOn))){ //player not touching ground, or no longer touching the current surface
         p1.surfaceOn = null;
         p1.jumping = true;
         p1.texture = p1Textures.jump;
@@ -474,7 +474,7 @@
       p1.vy = 0;
       p1.y = p1.y - spriteScale * .15;
       p1.height = spriteScaleHeight;
-      p1.texture = p1WalkTextures[1];
+      p1.texture = p1Textures.front;
       left.subscribe();
       right.subscribe();
       up.subscribe();
