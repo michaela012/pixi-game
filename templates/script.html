@@ -2,10 +2,12 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Hello World</title>
+  <title>Space Jump</title>
 </head>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.1.3/pixi.min.js"></script>
-  <style> @import url(http://fonts.googleapis.com/css?family=Odibee+Sans:400,600); </style>
+  <style> @import url(http://fonts.googleapis.com/css?family=Odibee+Sans:400,600);
+    body {background-color: #000000;font-family: "Odibee Sans", Consolas, monaco, monospace; line-height: 2vh; font-size: 30px;  margin: 0; }
+  </style>
 <body>
   <script type="text/javascript">
     let type = "WebGL"
@@ -43,12 +45,14 @@
     .add("Spritesheets/items.json")
     .add("Spritesheets/enemies.json")
     .add("Spritesheets/backgrounds/bgtest.png")
+    .add("Spritesheets/backgrounds/ship.png")
     .load(startScreen);
 
   //define vars
   let p1, ground, exit, bg, state, p1Textures, enemyTextures, time, numCoinsCollected, coinDisplay, arrowLeft, arrowRight, startGems;
   let speed = 0;
-  let spriteScale = 40;
+  const spriteScale = 40;
+  const shipHeight = -10000;
   let spriteScaleHeight = spriteScale + (spriteScale*.2);;
   let lifeCount = 3;
   let left, right, up, down;
@@ -221,7 +225,7 @@
     enemy.name = enemyMap[enemyNum];
     enemy.x = -spriteScale;
     enemy.y = Math.floor(Math.random()* app.screen.height-spriteScale*2) + spriteScale;
-    enemy.vx = 1;
+    enemy.vx = 2;
     enemies.push(enemy);
     app.stage.addChild(enemy);
   }
@@ -321,9 +325,9 @@
     else if (p1.surfaceOn !== null){
       //player must be on a surface, or just leaving (falling)
       if (p1.surfaceOn != ground) p1.y += speed;
-      else if (speed != 0) p1.y += .1;
+      else if (speed != 0) p1.y += ground.vy;
 
-      if ((playerBottom < ground.y-(spriteScale*.5)) && (!testCollision(p1, p1.surfaceOn))){ //player not touching ground, or no longer touching the current surface
+      if ((playerBottom < ground.y-(30)) && (!testCollision(p1, p1.surfaceOn))){ //player not touching ground, or no longer touching the current surface
         p1.surfaceOn = null;
         p1.jumping = true;
         p1.texture = p1Textures.jump;
@@ -347,7 +351,7 @@
   function initializeMainStartElements(){
     //ground
     ground = new PIXI.Container();
-    ground.vy = .1;
+    ground.vy = .3;
     for (let i = 0; i < app.screen.width / spriteScale + 1; i++){
       let grass = new Sprite(Texture.from("grassMid.png"));
       let dirt = new Sprite(Texture.from("grassCenter.png"));
@@ -367,9 +371,6 @@
     arrowLeft.y = arrowRight.y = ground.y - spriteScale*1.25;
     arrowLeft.height = arrowLeft.width = arrowRight.height = arrowRight.width = spriteScale * 1.5;
     ground.addChild(arrowLeft, arrowRight);
-
-
-
 
     bg = new Sprite(Loader.shared.resources["Spritesheets/backgrounds/bgtest.png"].texture);
     bg.height = app.screen.height;
@@ -487,6 +488,7 @@
   //game scripts
   // initial intro, movement test, & char selection screen
   function startScreen(){
+    //character names
     let p1Name = new PIXI.Text("Zemi the Adventurer", {fontFamily: "Odibee Sans", fontSize: 30, fill: 0xe6eefc, align:"center"});
     p1Name.anchor.set(0.5);
     let p2Name = new PIXI.Text("Zoki the Brave", {fontFamily: "Odibee Sans", fontSize: 30, fill: 0xe6eefc, align:"center"});
@@ -498,43 +500,42 @@
     let p5Name = new PIXI.Text("Ziti the Explorer", {fontFamily: "Odibee Sans", fontSize: 30, fill: 0xe6eefc, align:"center"});
     p5Name.anchor.set(0.5);
 
+    //character icons
     let p1Icon = new Sprite(Texture.from("p1_badge1.png"))
     p1Icon.anchor.set(0.5);
     p1Icon.x = p1Name.x = app.screen.width *.5 - spriteScale*4;
-
     let p2Icon = new Sprite(Texture.from("p2_badge1.png"))
     p2Icon.anchor.set(0.5);
     p2Icon.x = p2Name.x = app.screen.width *.5 - spriteScale*2;
-
     let p3Icon = new Sprite(Texture.from("p3_badge1.png"))
     p3Icon.anchor.set(0.5);
     p3Icon.x = p3Name.x = app.screen.width *.5;
-
     let p4Icon = new Sprite(Texture.from("p4_badge1.png"))
     p4Icon.anchor.set(0.5);
     p4Icon.x = p4Name.x = app.screen.width *.5 + spriteScale*2;
-
     let p5Icon = new Sprite(Texture.from("p5_badge1.png"))
     p5Icon.anchor.set(0.5);
     p5Icon.x = p5Name.x = app.screen.width *.5 + spriteScale*4;
 
-
+    //icon characteristics
     p1Icon.height = p1Icon.width = spriteScale*2;
     p2Icon.height = p2Icon.width = p3Icon.height = p3Icon.width = p4Icon.height = p4Icon.width = p5Icon.height = p5Icon.width = spriteScale*1.5;
     p1Icon.y = p2Icon.y = p3Icon.y = p4Icon.y = p5Icon.y = app.screen.height*.45;
     p1Name.y = p2Name.y = p3Name.y = p4Name.y = p5Name.y = p1Icon.y+spriteScale*2;
-    let intro = new PIXI.Text("SPACE JUMP", {fontFamily: "Odibee Sans", fontSize: 80, fill: 0xe6eefc, align:"center"});
-    let objective = new PIXI.Text("collect gems and reach the spaceship!", {fontFamily: "Odibee Sans", fontSize: 30, fill: 0xe6eefc, align:"center"});
-    let displayInstructions = new PIXI.Text("<space> to toggle characters\n<enter> to begin game", {fontFamily: "Odibee Sans", fontSize: 25, fill: 0xc7d7ff, align:"center"});
+
+    //non-character text elements
+    let intro = new PIXI.Text("SPACE JUMP", {fontFamily: "Odibee Sans", fontSize: 90, fill: 0xe6eefc, align:"center"});
+    let objective = new PIXI.Text("collect gems and reach the spaceship!", {fontFamily: "Odibee Sans", fontSize: 35, fill: 0xe6eefc, align:"center"});
+    let displayInstructions = new PIXI.Text("<space> to toggle characters\n<enter> to begin game", {fontFamily: "Odibee Sans", fontSize: 27, fill: 0xc7d7ff, align:"center"});
     displayInstructions.anchor.set(0.5);
     intro.anchor.set(0.5);
     objective.anchor.set(0.5);
     displayInstructions.x = intro.x = objective.x =  app.screen.width*.5;
-    displayInstructions.y = app.screen.height*.5 + spriteScale*3.5;
+    displayInstructions.y = app.screen.height*.5 + spriteScale*4  ;
     intro.y = app.screen.height*.2;
     objective.y = app.screen.height*.28;
 
-
+    //identifiers for character selection
     let players = [p1Icon, p2Icon, p3Icon, p4Icon, p5Icon];
     let names = [p1Name, p2Name, p3Name, p4Name, p5Name];
     let num = 0;
@@ -566,13 +567,13 @@
     //create gems
     let gemTexture = Texture.from("gemYellow.png");
     startGems = new  Array();
-    for (let i=0; i<19; i++){
+    for (let i=0; i<20; i++){
       gem = new Sprite(gemTexture);
       gem.anchor.set(0.5);
       gem.height = gem.width = spriteScale*.9;
       if (i < 5){
         gem.y = ground.y - spriteScale;
-        gem.x = 150 + i*spriteScale;
+        gem.x = app.screen.width*.5 + (i+1)*spriteScale;
       }
       else if (i < 9){
         gem.y = startGems[i-1].y - spriteScale*.9;
@@ -586,11 +587,11 @@
         let num = 19-i;
         gem.y = startGems[num].y;
         gem.x = app.screen.width - startGems[num].x;
-        //console.log(gem.x, gem.y, startGems[num])
       }
       startGems.push(gem);
     }
 
+    //add elements to stage
     app.stage.addChild(bg, p1Icon, p2Icon, p3Icon, p4Icon, p5Icon, ground, arrowLeft, arrowRight, p1, name);
     app.stage.addChild(displayInstructions, intro, objective);
     for (let i in startGems){
@@ -598,7 +599,7 @@
     }
 
     //start game loop
-    state = playerMovementDynamics
+    state = playerMovementDynamics;
     app.ticker.add(delta => gameLoop(delta));
   }
 
@@ -663,10 +664,12 @@
     p1.texture = p1Textures.stand;
 
     //exit
-    exit = new Sprite( Texture.from("signExit.png"));
-    exit.y = -500;
-    exit.x = app.screen.width*.5;
-    exit.height = exit.width = spriteScale*2;
+    exit = new Sprite(Loader.shared.resources["Spritesheets/backgrounds/ship.png"].texture);
+    exit.anchor.set(0.5);
+    exit.y = shipHeight;
+    exit.x = app.screen.width*.6;
+    exit.height = spriteScale*15;
+    exit.width = spriteScale*10;
     exit.vy = 0;
 
     coinDisplay = new PIXI.Container();
@@ -713,14 +716,22 @@
 
     //determine platform speed
     speed = p1.vy;
-    if (p1.y < app.screen.height * .1) speed = 1;
-    else if (p1.y < app.screen.height * .2) speed = .9;
-    else if (p1.y < app.screen.height * .3) speed = .8;
-    else if (p1.y < app.screen.height * .4) speed = .7;
-    else if (p1.y < app.screen.height * .5) speed = .6;
-    else if (p1.y < app.screen.height * .6) speed = .5;
-    else if (p1.y < app.screen.height * .7) speed = .4;
-    else speed = .3;
+    if (p1.y < 0) speed = 6;
+    else if (p1.y < app.screen.height * .05) speed = 5;
+    else if (p1.y < app.screen.height * .1) speed = 4.5;
+    else if (p1.y < app.screen.height * .15) speed = 4;
+    else if (p1.y < app.screen.height * .2) speed = 3.5;
+    else if (p1.y < app.screen.height * .25) speed = 3;
+    else if (p1.y < app.screen.height * .3) speed = 2.5;
+    else if (p1.y < app.screen.height * .4) speed = 2.25;
+    else if (p1.y < app.screen.height * .5) speed = 2;
+    else if (p1.y < app.screen.height * .55) speed = 1.75;
+    else if (p1.y < app.screen.height * .6) speed = 1.5;
+    else if (p1.y < app.screen.height * .7) speed = 1.2;
+    else if (p1.y < app.screen.height * .8) speed = 1;
+    else if (p1.y < app.screen.height * .9) speed = .8;
+    else speed = .6;
+    console.log(speed);
 
     //check collision and render coins
     for (let i in coins){
@@ -734,16 +745,16 @@
     coinDisplay.removeChildren();
     let gemDisplayIcon = new Sprite(Texture.from("gemYellow.png"));
     gemDisplayIcon.width = gemDisplayIcon.height = spriteScale;
-    let gemCountMessage = new PIXI.Text("x " + numCoinsCollected, {fontFamily: "Odibee Sans", fontSize: 15, fill: 0xe6eefc});
-    gemDisplayIcon.y = 12;
-    gemCountMessage.y = 14;
+    let gemCountMessage = new PIXI.Text("x " + numCoinsCollected, {fontFamily: "Odibee Sans", fontSize: 20, fill: 0xe6eefc});
+    gemDisplayIcon.y = spriteScale*.5;
+    gemCountMessage.y = spriteScale*.75;
     gemDisplayIcon.x = app.screen.width - gemCountMessage.width - spriteScale;
     gemCountMessage.x = app.screen.width - gemCountMessage.width - spriteScale*.1;
     coinDisplay.addChild(gemDisplayIcon, gemCountMessage);
 
     //generate platforms
     let lastPlatY = platforms[platforms.length-1].y
-    if (lastPlatY >= 0 && lastPlatY >= exit.y){
+    if (lastPlatY >= 0 && lastPlatY >= exit.y+spriteScale*2){
       generatePlatform(Texture.from("castleHalf.png"));
     }
 
@@ -821,27 +832,28 @@
     //end game sequence
     if (playerBottom >= app.screen.height+spriteScale/2) {
       app.stage.removeChildren();
-      let displayMessage = new PIXI.Text("game over!\nyou didn't make it to the ship\n\n <enter> to try again", {fontFamily: "Odibee Sans", fontSize: 25, fill: 0xe6eefc, align:"center"});
+      let displayMessage = new PIXI.Text("game over!\nyou didn't make it to the ship\n\n <enter> to try again", {fontFamily: "Odibee Sans", fontSize: 40, fill: 0xe6eefc, align:"center"});
       displayMessage.anchor.set(0.5);
       displayMessage.y = app.screen.height*.5;
       displayMessage.x = app.screen.width*.5;
       app.stage.addChild(bg, displayMessage);
       state= end;
     }
-    else if (exit.y > 0 && p1.y <= exit.y){
+    else if (exit.y > 0 && p1.y <= exit.y && (p1.x < exit.x+exit.width*.25) && (p1.x > exit.x-exit.width*.25)){
       app.stage.removeChildren();
       let wonMessage = "You made it!\n\n";
       //get score
       let timeBonus = 0;
       if (time < 12000) timeBonus = 12000-time;
       let coinBonus = numCoinsCollected * 50;
-      let score = 1000 + timeBonus + coinBonus;
+      let lifeBonus = lifeCount * 200;
+      let score = 1000 + timeBonus + coinBonus + lifeBonus;
       let scoreMessage = "-------------------------\nSCORE: " +score
-              + "\n-------------------------\n   ship reached: 1000\n   time bonus: "+timeBonus+"\n   gem bonus ("+numCoinsCollected+"x50): "
-              + coinBonus + "\n\n <enter> to play again";
-      let wonDisplay = new PIXI.Text(wonMessage, {fontFamily: "Odibee Sans", fontSize: 20, fill: 0xe6eefc, align:"center"});
+              + "\n-------------------------\n   ship reached: 1000\n   life bonus: (" +lifeCount+"x200): "+ lifeBonus + "\n   time bonus: "+timeBonus+"\n   gem bonus ("+numCoinsCollected+"x50): "
+              + coinBonus + "\n\n   <enter> to play again";
+      let wonDisplay = new PIXI.Text(wonMessage, {fontFamily: "Odibee Sans", fontSize: 35, fill: 0xe6eefc, align:"center"});
       wonDisplay.anchor.set(0.5);
-      let displayMessage = new PIXI.Text( scoreMessage, {fontFamily: "Odibee Sans", fontSize: 20, fill: 0xe6eefc});
+      let displayMessage = new PIXI.Text( scoreMessage, {fontFamily: "Odibee Sans", fontSize: 35, fill: 0xe6eefc});
       displayMessage.anchor.set(0.5);
       displayMessage.y = app.screen.height*.5;
       displayMessage.x = wonDisplay.x = app.screen.width*.5;
@@ -904,8 +916,7 @@
     p1.left = p1.x - p1.width*.5;
     p1.right = p1.x + p1.width*.5;
     //exit
-    exit.y = -500;
-    exit.x = app.screen.width*.5;
+    exit.y = shipHeight;;
     exit.vy = 0;
 
     //reset life count
