@@ -1,16 +1,4 @@
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Space Jump</title>
-</head>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.1.3/pixi.min.js"></script>
-  <style> @import url(http://fonts.googleapis.com/css?family=Odibee+Sans:400,600);
-    body {background-color: #000000;font-family: "Odibee Sans", Consolas, monaco, monospace; line-height: 2vh; font-size: 30px;  margin: 0; }
-  </style>
-<body>
-  <script type="text/javascript">
-    let type = "WebGL"
+let type = "WebGL"
     if(!PIXI.utils.isWebGLSupported()){
       type = "canvas"
     }
@@ -665,7 +653,7 @@
     p1.texture = p1Textures.stand;
 
     //exit
-    exit = new Sprite(Loader.shared.resources["Spritesheets/backgrounds/ship.png"].texture);
+    exit = new Sprite(Loader.shared.resources["static/images/Spritesheets/backgrounds/ship.png"].texture);
     exit.anchor.set(0.5);
     exit.y = shipHeight;
     exit.x = app.screen.width*.6;
@@ -685,7 +673,7 @@
       lives.push(life)
     }
 
-    shipIcon = new Sprite(Loader.shared.resources["Spritesheets/backgrounds/shipIcon.png"].texture);
+    shipIcon = new Sprite(Loader.shared.resources["static/images/Spritesheets/backgrounds/shipIcon.png"].texture);
     shipIcon.height = spriteScale;
     shipIcon.width = spriteScale*1.25;
     shipIcon.y = shipIcon.x = 5;
@@ -970,8 +958,3 @@
   }
 
 
-
-
-  </script>
-</body>
-</html>
