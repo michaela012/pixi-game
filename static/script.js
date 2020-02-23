@@ -714,21 +714,22 @@ let type = "WebGL"
 
     //determine platform speed
     speed = p1.vy;
-    if (p1.y < 0) speed = 6;
-    else if (p1.y < app.screen.height * .05) speed = 5;
-    else if (p1.y < app.screen.height * .1) speed = 4.5;
-    else if (p1.y < app.screen.height * .15) speed = 4;
-    else if (p1.y < app.screen.height * .2) speed = 3.5;
-    else if (p1.y < app.screen.height * .25) speed = 3;
-    else if (p1.y < app.screen.height * .3) speed = 2.5;
-    else if (p1.y < app.screen.height * .4) speed = 2.25;
-    else if (p1.y < app.screen.height * .5) speed = 2;
-    else if (p1.y < app.screen.height * .55) speed = 1.75;
-    else if (p1.y < app.screen.height * .6) speed = 1.5;
-    else if (p1.y < app.screen.height * .7) speed = 1.2;
-    else if (p1.y < app.screen.height * .8) speed = 1;
-    else if (p1.y < app.screen.height * .9) speed = .8;
-    else speed = .6;
+    let topSpeed = 3;
+    if (p1.y < 0) speed = topSpeed;
+    else if (p1.y < app.screen.height * .05) speed = topSpeed*.83;
+    else if (p1.y < app.screen.height * .1) speed = topSpeed*.75;
+    else if (p1.y < app.screen.height * .15) speed = topSpeed*.67;
+    else if (p1.y < app.screen.height * .2) speed = topSpeed*.59;
+    else if (p1.y < app.screen.height * .25) speed = topSpeed*.5;
+    else if (p1.y < app.screen.height * .3) speed = topSpeed*.42;
+    else if (p1.y < app.screen.height * .4) speed = topSpeed*.38;
+    else if (p1.y < app.screen.height * .5) speed = topSpeed*.34;
+    else if (p1.y < app.screen.height * .55) speed = topSpeed*.3;
+    else if (p1.y < app.screen.height * .6) speed = topSpeed*.25;
+    else if (p1.y < app.screen.height * .7) speed = topSpeed*.2;
+    else if (p1.y < app.screen.height * .8) speed = topSpeed*.17;
+    else if (p1.y < app.screen.height * .9) speed = topSpeed*.13;
+    else speed = topSpeed*.1;
 
     //check collision and render coins
     for (let i in coins){
@@ -753,7 +754,7 @@ let type = "WebGL"
     //display ship distance
     app.stage.removeChild(shipDisplay);
     let p1ShipDistance = Math.floor((p1.y - exit.y)*.1);
-    shipDisplay = new PIXI.Text(": " + p1ShipDistance, {fontFamily: "Odibee Sans", fontSize: 10, fill: 0xe6eefc});
+    shipDisplay = new PIXI.Text(": " + p1ShipDistance + "m", {fontFamily: "Odibee Sans", fontSize: 10, fill: 0xe6eefc});
     shipDisplay.x = spriteScale*1.5;
     shipDisplay.y = spriteScale*.4;
     app.stage.addChild(shipDisplay);
@@ -834,13 +835,11 @@ let type = "WebGL"
       p1.vy = playerSpeed*2;
     }
 
-    console.log(p1.vy, "aaaaaaa");
-
     playerBottom = p1.y + p1.height*.5;
     //end game sequence
     if (playerBottom >= app.screen.height+spriteScale/2) {
       app.stage.removeChildren();
-      let displayMessage = new PIXI.Text("game over!\nyou didn't make it to the ship\n\n <enter> to try again", {fontFamily: "Odibee Sans", fontSize: 10, fill: 0xe6eefc, align:"center"});
+      let displayMessage = new PIXI.Text("game over!\nyou didn't make it to the ship\n\n <enter> to try again", {fontFamily: "Odibee Sans", fontSize: 17, fill: 0xe6eefc, align:"center"});
       displayMessage.anchor.set(0.5);
       displayMessage.y = app.screen.height*.5;
       displayMessage.x = app.screen.width*.5;
