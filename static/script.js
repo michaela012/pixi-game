@@ -557,24 +557,25 @@ let type = "WebGL"
     //create gems
     let gemTexture = Texture.from("gemYellow.png");
     startGems = new  Array();
-    for (let i=0; i<20; i++){
+    console.log(2)
+    for (let i=0; i<18; i++){
       gem = new Sprite(gemTexture);
       gem.anchor.set(0.5);
       gem.height = gem.width = spriteScale*.9;
-      if (i < 5){
+      if (i < 4){
         gem.y = ground.y - spriteScale;
         gem.x = app.screen.width*.5 + (i+1)*spriteScale;
       }
-      else if (i < 9){
+      else if (i < 8){
         gem.y = startGems[i-1].y - spriteScale*.9;
         gem.x = startGems[i-1].x + i*2;
       }
-      else if (i < 10){
-        gem.y = startGems[8].y - spriteScale*.5;
+      else if (i < 9){
+        gem.y = startGems[i-1].y - spriteScale*.5;
         gem.x = startGems[i-1].x + spriteScale*.8;
       }
       else{
-        let num = 19-i;
+        let num = 17-i;
         gem.y = startGems[num].y;
         gem.x = app.screen.width - startGems[num].x;
       }
