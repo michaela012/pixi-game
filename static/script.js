@@ -557,7 +557,6 @@ let type = "WebGL"
     //create gems
     let gemTexture = Texture.from("gemYellow.png");
     startGems = new  Array();
-    console.log(2)
     for (let i=0; i<18; i++){
       gem = new Sprite(gemTexture);
       gem.anchor.set(0.5);
