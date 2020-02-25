@@ -13,6 +13,7 @@ let type = "WebGL"
 
 
   //Create a Pixi Application
+  PIXI.settings.PRECISION_FRAGMENT = 'highp';
   let app = new Application({
       width: 300,
       height: 500,
@@ -341,7 +342,7 @@ let type = "WebGL"
   function initializeMainStartElements(){
     //ground
     ground = new PIXI.Container();
-    ground.vy = .3;
+    ground.vy = .1;
     for (let i = 0; i < app.screen.width / spriteScale + 1; i++){
       let grass = new Sprite(Texture.from("grassMid.png"));
       let dirt = new Sprite(Texture.from("grassCenter.png"));
@@ -419,7 +420,7 @@ let type = "WebGL"
     //key press and release methods
     // left
     left.press = () => {
-      p1.vx = -1*playerSpeed;
+      p1.vx = -1.2*playerSpeed;
       p1.height = spriteScaleHeight;
     }
     left.release = () => {
@@ -430,7 +431,7 @@ let type = "WebGL"
 
     //right
     right.press = () => {
-      p1.vx = playerSpeed;
+      p1.vx = playerSpeed*1.2;
       p1.height = spriteScaleHeight;
     }
     right.release = () => {
@@ -441,7 +442,7 @@ let type = "WebGL"
 
     //up
     up.press = () => {
-      p1.vy = -1.2*playerSpeed;
+      p1.vy = playerSpeed*-2;
       p1.jumping = true;
       p1.jumpHeight = p1.y - 4*spriteScale;
       p1.hangtime = 12;
@@ -479,15 +480,15 @@ let type = "WebGL"
   // initial intro, movement test, & char selection screen
   function startScreen(){
     //character names
-    let p1Name = new PIXI.Text("Zemi the Adventurer", {fontFamily: "Odibee Sans", fontSize: 15, fill: 0xe6eefc, align:"center"});
+    let p1Name = new PIXI.Text("Zemi the Adventurer", {fontFamily: "Odibee Sans", fontSize: 16, fill: 0xe6eefc, align:"center"});
     p1Name.anchor.set(0.5);
-    let p2Name = new PIXI.Text("Zoki the Brave", {fontFamily: "Odibee Sans", fontSize: 15, fill: 0xe6eefc, align:"center"});
+    let p2Name = new PIXI.Text("Zoki the Brave", {fontFamily: "Odibee Sans", fontSize: 16, fill: 0xe6eefc, align:"center"});
     p2Name.anchor.set(0.5);
-    let p3Name = new PIXI.Text("Zamu the Cunning", {fontFamily: "Odibee Sans", fontSize: 15, fill: 0xe6eefc, align:"center"});
+    let p3Name = new PIXI.Text("Zamu the Cunning", {fontFamily: "Odibee Sans", fontSize: 16, fill: 0xe6eefc, align:"center"});
     p3Name.anchor.set(0.5);
-    let p4Name = new PIXI.Text("Zorp the Destroyer", {fontFamily: "Odibee Sans", fontSize: 15, fill: 0xe6eefc, align:"center"});
+    let p4Name = new PIXI.Text("Zorp the Destroyer", {fontFamily: "Odibee Sans", fontSize: 16, fill: 0xe6eefc, align:"center"});
     p4Name.anchor.set(0.5);
-    let p5Name = new PIXI.Text("Ziti the Explorer", {fontFamily: "Odibee Sans", fontSize: 15, fill: 0xe6eefc, align:"center"});
+    let p5Name = new PIXI.Text("Ziti the Explorer", {fontFamily: "Odibee Sans", fontSize: 16, fill: 0xe6eefc, align:"center"});
     p5Name.anchor.set(0.5);
 
     //character icons
@@ -514,9 +515,9 @@ let type = "WebGL"
     p1Name.y = p2Name.y = p3Name.y = p4Name.y = p5Name.y = p1Icon.y+spriteScale*2;
 
     //non-character text elements
-    let intro = new PIXI.Text("SPACE JUMP", {fontFamily: "Odibee Sans", fontSize: 45, fill: 0xe6eefc, align:"center"});
-    let objective = new PIXI.Text("collect gems and reach the spaceship!", {fontFamily: "Odibee Sans", fontSize: 17, fill: 0xe6eefc, align:"center"});
-    let displayInstructions = new PIXI.Text("<space> to toggle characters\n<enter> to begin game", {fontFamily: "Odibee Sans", fontSize: 13, fill: 0xc7d7ff, align:"center"});
+    let intro = new PIXI.Text("SPACE JUMP", {fontFamily: "Odibee Sans", fontSize: 55, fill: 0xe6eefc, align:"center"});
+    let objective = new PIXI.Text("collect gems and reach the spaceship!", {fontFamily: "Odibee Sans", fontSize: 21, fill: 0xe6eefc, align:"center"});
+    let displayInstructions = new PIXI.Text("<space> to toggle characters\n<enter> to begin game", {fontFamily: "Odibee Sans", fontSize: 16, fill: 0xc7d7ff, align:"center"});
     displayInstructions.anchor.set(0.5);
     intro.anchor.set(0.5);
     objective.anchor.set(0.5);
@@ -668,15 +669,15 @@ let type = "WebGL"
     //life count
     for (let i=0; i < lifeCount; i++){
       let life = new Sprite(Texture.from("hud_heartFull.png"));
-      life.height = life.width = spriteScale*.5;
+      life.height = life.width = spriteScale*.6;
       life.y = 3;
-      life.x = app.screen.width - spriteScaleHeight*.5 - (i * (spriteScaleHeight*.6));
+      life.x = app.screen.width - spriteScaleHeight*.5 - (i * (spriteScaleHeight*.7));
       lives.push(life)
     }
 
     shipIcon = new Sprite(Loader.shared.resources["static/images/Spritesheets/backgrounds/shipIcon.png"].texture);
-    shipIcon.height = spriteScale;
-    shipIcon.width = spriteScale*1.25;
+    shipIcon.height = spriteScale*1.25;
+    shipIcon.width = spriteScale*1.5;
     shipIcon.y = shipIcon.x = 5;
 
     //Add elements to stage
@@ -743,20 +744,20 @@ let type = "WebGL"
     //display num coins
     coinDisplay.removeChildren();
     let gemDisplayIcon = new Sprite(Texture.from("gemYellow.png"));
-    gemDisplayIcon.width = gemDisplayIcon.height = spriteScale;
-    let gemCountMessage = new PIXI.Text("x " + numCoinsCollected, {fontFamily: "Odibee Sans", fontSize: 10, fill: 0xe6eefc});
-    gemDisplayIcon.y = spriteScale*.5;
-    gemCountMessage.y = spriteScale*.75;
-    gemDisplayIcon.x = app.screen.width - gemCountMessage.width - spriteScale;
+    gemDisplayIcon.width = gemDisplayIcon.height = spriteScale*1.25;
+    let gemCountMessage = new PIXI.Text("x " + numCoinsCollected, {fontFamily: "Odibee Sans", fontSize: 12, fill: 0xe6eefc});
+    gemDisplayIcon.y = spriteScale*.55;
+    gemCountMessage.y = spriteScale*.8;
+    gemDisplayIcon.x = app.screen.width - gemCountMessage.width - spriteScale*1.15;
     gemCountMessage.x = app.screen.width - gemCountMessage.width - spriteScale*.1;
     coinDisplay.addChild(gemDisplayIcon, gemCountMessage);
 
     //display ship distance
     app.stage.removeChild(shipDisplay);
     let p1ShipDistance = Math.floor((p1.y - exit.y)*.1);
-    shipDisplay = new PIXI.Text(": " + p1ShipDistance + "m", {fontFamily: "Odibee Sans", fontSize: 10, fill: 0xe6eefc});
-    shipDisplay.x = spriteScale*1.5;
-    shipDisplay.y = spriteScale*.4;
+    shipDisplay = new PIXI.Text(": " + p1ShipDistance + "m", {fontFamily: "Odibee Sans", fontSize: 12, fill: 0xe6eefc});
+    shipDisplay.x = spriteScale*1.8;
+    shipDisplay.y = spriteScale*.5;
     app.stage.addChild(shipDisplay);
 
     //generate platforms
