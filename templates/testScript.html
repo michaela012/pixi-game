@@ -88,7 +88,19 @@
 
     <div class="mainContent"> <br>
         <div id="inputWindow">
-            top scores: <br>
+            HIGHSCORES: <br>
+
+            <table align="center">
+                <tr> <td> </td><td style="color:#eeeeee">user</td> <td style="color:#eeeeee">score</td> <td style="color:#eeeeee">date</td></tr>
+                {% for row in topScores %}
+                <tr>
+                    <td>  <img src="static/img/p{{row.icon}}.png" height="20"> &nbsp&nbsp&nbsp </td>
+                    <td>{{ row.username }} &nbsp&nbsp&nbsp </td>
+                    <td>{{ row.score }} &nbsp&nbsp&nbsp </td>
+                    <td>{{ row.time.date() }}</td>
+                </tr>
+                {% endfor %}
+            </table>
 
         </div>
     </div>

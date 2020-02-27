@@ -16,23 +16,28 @@ def index():
 
 @app.route('/testScript', methods=['GET', 'POST'])
 def testScript():
-    if request.method == 'GET':
-        return render_template('testScript.html')
-
-    else:
+    if request.method == 'POST':
         username = request.form.get('user') or 'anonymous'
         score = request.form.get('score')
         icon = request.form.get('icon')
         print(username, score)
         if username and score:
             new_score = Highscore(username=username,
-                                   score=score,
-                                   time=dt.now(),
-                                   icon=icon)
+                                  score=score,
+                                  time=dt.now(),
+                                  icon=icon)
             db.session.add(new_score)
             db.session.commit()
-            #return make_response(f"{new_score} successfully created!")
-        return render_template('testScript.html')
+
+    top_ten = Highscore.query.order_by(Highscore.score.desc()).limit(10).all()
+    topScores = []
+    for row in top_ten:
+        score = {'name': row.username,
+                 'score': row.score,
+                 'time': row.time,
+                 'icon': row.icon}
+        topScores.append(score)
+    return render_template('testScript.html', topScores=top_ten)
 
 
 if __name__ == '__main__':
