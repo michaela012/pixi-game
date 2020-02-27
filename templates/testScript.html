@@ -43,15 +43,9 @@
     header{
         margin-bottom: 3vmin;
     }
-    div.nav a {
+    div.nav a{
         color: #eeeeee;
-    }
-    div.nav {
         font-size: 3vmin;
-    }
-    div.nav img{
-        width: 2.5vmin;
-        height: 2.5vmin;
     }
     a.navbar-title {
        font-size: 6vmin;
@@ -67,7 +61,6 @@
         border-top: 2rem;
     }
 
-
   </style>
 
   <body>
@@ -81,10 +74,8 @@
         <nav class="navbar navbar-light">
             <a class="navbar-title">SPACE JUMP</a>
 
-
             <div class="nav">
-                <a href="https://github.com/michaela012"><img src="static/img/github-icon.png" ></a> &nbsp&nbsp&nbsp&nbsp
-                <a href="https://github.com/michaela012/pixi-game">source</a>
+              <a href="https://github.com/michaela012/pixi-game">source</a>
             </div>
 
         </nav>
@@ -92,11 +83,14 @@
 
     <!-- main content elements: canvas, about, score table -->
     <div class="gameWindow">
-        <script src = "static/script.js"></script>
+        <script src = "static/testScript.js"></script>
     </div>
 
-    <div class="mainContent">
-        Click in game window to register keyboard events.
+    <div class="mainContent"> <br>
+        <div id="inputWindow">
+            top scores: <br>
+
+        </div>
     </div>
 
       <!-- bootstrap necessary imports: jQuery first, then Popper.js, then Bootstrap JS -->
@@ -105,6 +99,7 @@
             <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
 
     <footer>
+
     </footer>
   </body>
 </html>
