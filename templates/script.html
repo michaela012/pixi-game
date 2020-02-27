@@ -36,7 +36,7 @@
         text-align: center;
         background-color: #111111;
         font-family: "Odibee Sans", Consolas, monaco, monospace;
-        line-height: 2vh;
+        line-height: 20px;
         font-size: 20px;
         margin: 3vmin;
     }
@@ -97,8 +97,8 @@
         <div id="inputWindow">
             HIGHSCORES: <br>
 
-            <table align="center">
-                <tr> <td> </td><td style="color:#eeeeee">user</td> <td style="color:#eeeeee">score</td> <td style="color:#eeeeee">date</td></tr>
+            <table class="scoreTable" align="center">
+                <th> <td style="color:#eeeeee">user</td> <td style="color:#eeeeee">score</td> <td style="color:#eeeeee">date</td></th>
                 {% for row in topScores %}
                 <tr>
                     <td>  <img src="static/img/p{{row.icon}}.png" height="20"> &nbsp&nbsp&nbsp </td>
