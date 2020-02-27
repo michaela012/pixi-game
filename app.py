@@ -15,7 +15,6 @@ def index():
         username = request.form.get('user') or 'anonymous'
         score = request.form.get('score')
         icon = request.form.get('icon')
-        print(username, score)
         if username and score:
             new_score = Highscore(username=username,
                                   score=score,
@@ -25,13 +24,6 @@ def index():
             db.session.commit()
 
     top_ten = Highscore.query.order_by(Highscore.score.desc()).limit(10).all()
-    topScores = []
-    for row in top_ten:
-        score = {'name': row.username,
-                 'score': row.score,
-                 'time': row.time,
-                 'icon': row.icon}
-        topScores.append(score)
     return render_template('script.html', topScores=top_ten)
 
 
