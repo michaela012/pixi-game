@@ -39,11 +39,11 @@ let type = "WebGL"
     .load(startScreen);
 
   //define vars
-  let p1, ground, exit, bg, state, p1Textures, enemyTextures, time, numCoinsCollected, coinDisplay, arrowLeft, arrowRight, startGems, shipIcon, shipDisplay;
+  let p1, ground, exit, bg, state, p1Textures, enemyTextures, time, numCoinsCollected, coinDisplay, arrowLeft, arrowRight, startGems, shipIcon, iconNum, shipDisplay;
   let speed = 0;
   const spriteScale = 20;
   const playerSpeed = 4;
-  const shipHeight = -10000;
+  const shipHeight = -8000;
   let spriteScaleHeight = spriteScale + (spriteScale*.2);;
   let lifeCount = 3;
   let left, right, up, down;
@@ -550,7 +550,8 @@ let type = "WebGL"
     enter.press = () => {
       enter.unsubscribe();
       space.unsubscribe();
-      setup("p"+(num+1));
+      iconNum = num+1;
+      setup("p" + iconNum);
     }
 
     initializeMainStartElements();
@@ -840,7 +841,7 @@ let type = "WebGL"
     //end game sequence
     if (playerBottom >= app.screen.height+spriteScale/2) {
       app.stage.removeChildren();
-      let displayMessage = new PIXI.Text("game over!\nyou didn't make it to the ship\n\n <enter> to try again", {fontFamily: "Odibee Sans", fontSize: 17, fill: 0xe6eefc, align:"center"});
+      let displayMessage = new PIXI.Text("game over!\nyou didn't make it to the ship\n\n <tab> to try again", {fontFamily: "Odibee Sans", fontSize: 17, fill: 0xe6eefc, align:"center"});
       displayMessage.anchor.set(0.5);
       displayMessage.y = app.screen.height*.5;
       displayMessage.x = app.screen.width*.5;
@@ -852,13 +853,13 @@ let type = "WebGL"
       let wonMessage = "You made it!\n\n";
       //get score
       let timeBonus = 0;
-      if (time < 10000) timeBonus = 10000-time;
+      if (time < 7000) timeBonus = 7000-time;
       let coinBonus = numCoinsCollected * 50;
       let lifeBonus = lifeCount * 200;
       let score = 1000 + timeBonus + coinBonus + lifeBonus;
       let scoreMessage = "-------------------------\nSCORE: " +score
               + "\n-------------------------\n   ship reached: 1000\n   life bonus: (" +lifeCount+"x200): "+ lifeBonus + "\n   time bonus: "+timeBonus+"\n   gem bonus ("+numCoinsCollected+"x50): "
-              + coinBonus + "\n\n   <enter> to play again";
+              + coinBonus + "\n\n           <tab> to play again";
       let wonDisplay = new PIXI.Text(wonMessage, {fontFamily: "Odibee Sans", fontSize: 17, fill: 0xe6eefc, align:"center"});
       wonDisplay.anchor.set(0.5);
       let displayMessage = new PIXI.Text( scoreMessage, {fontFamily: "Odibee Sans", fontSize: 17, fill: 0xe6eefc});
@@ -868,6 +869,9 @@ let type = "WebGL"
       wonDisplay.y = displayMessage.y - displayMessage.height*.5 - spriteScale;
       app.stage.addChild(bg, displayMessage, wonDisplay);
 
+      document.getElementById('inputWindow').innerHTML = "YOUR SCORE: " + score
+          + "<br> enter name to display on leaderboard: <form method='POST'> <input type='hidden' name='score' value='" +score+ "'> <input type='hidden' name='icon' value='" +iconNum+ "'> <input type='text' name='user'> <br> <input type='submit' value='add to scoreboard'> </form>";
+
       state = end;
     }
 
@@ -875,7 +879,7 @@ let type = "WebGL"
 
   //run ending screen, enable restart key input
   function end(){
-    let restart = keyboard("Enter");
+    let restart = keyboard("Tab");
     restart.subscribe();
     restart.press = () => {
       app.stage.removeChildren();

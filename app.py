@@ -9,13 +9,8 @@ db = SQLAlchemy(app)
 
 from models import *
 
-@app.route('/', methods=['GET'])
+@app.route('/', methods=['GET', 'POST'])
 def index():
-    return render_template('script.html')
-
-
-@app.route('/testScript', methods=['GET', 'POST'])
-def testScript():
     if request.method == 'POST':
         username = request.form.get('user') or 'anonymous'
         score = request.form.get('score')
@@ -37,7 +32,7 @@ def testScript():
                  'time': row.time,
                  'icon': row.icon}
         topScores.append(score)
-    return render_template('testScript.html', topScores=top_ten)
+    return render_template('script.html', topScores=top_ten)
 
 
 if __name__ == '__main__':

@@ -67,7 +67,6 @@
         border-top: 2rem;
     }
 
-
   </style>
 
   <body>
@@ -80,7 +79,6 @@
     <header>
         <nav class="navbar navbar-light">
             <a class="navbar-title">SPACE JUMP</a>
-
 
             <div class="nav">
                 <a href="https://github.com/michaela012"><img src="static/img/github-icon.png" ></a> &nbsp&nbsp&nbsp&nbsp
@@ -95,8 +93,23 @@
         <script src = "static/script.js"></script>
     </div>
 
-    <div class="mainContent">
-        Click in game window to register keyboard events.
+    <div class="mainContent"> <br>
+        <div id="inputWindow">
+            HIGHSCORES: <br>
+
+            <table align="center">
+                <tr> <td> </td><td style="color:#eeeeee">user</td> <td style="color:#eeeeee">score</td> <td style="color:#eeeeee">date</td></tr>
+                {% for row in topScores %}
+                <tr>
+                    <td>  <img src="static/img/p{{row.icon}}.png" height="20"> &nbsp&nbsp&nbsp </td>
+                    <td>{{ row.username }} &nbsp&nbsp&nbsp </td>
+                    <td>{{ row.score }} &nbsp&nbsp&nbsp </td>
+                    <td>{{ row.time.date() }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+
+        </div>
     </div>
 
       <!-- bootstrap necessary imports: jQuery first, then Popper.js, then Bootstrap JS -->
@@ -105,6 +118,7 @@
             <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
 
     <footer>
+
     </footer>
   </body>
 </html>
