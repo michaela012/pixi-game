@@ -43,7 +43,7 @@ let type = "WebGL"
   let speed = 0;
   const spriteScale = 20;
   const playerSpeed = 4;
-  const shipHeight = -8000;
+  const shipHeight = -5000;
   let spriteScaleHeight = spriteScale + (spriteScale*.2);;
   let lifeCount = 3;
   let left, right, up, down;
@@ -853,7 +853,7 @@ let type = "WebGL"
       let wonMessage = "You made it!\n\n";
       //get score
       let timeBonus = 0;
-      if (time < 7000) timeBonus = 7000-time;
+      if (time < 5000) timeBonus = 5000-time;
       let coinBonus = numCoinsCollected * 50;
       let lifeBonus = lifeCount * 200;
       let score = 1000 + timeBonus + coinBonus + lifeBonus;
@@ -928,7 +928,7 @@ let type = "WebGL"
     p1.left = p1.x - p1.width*.5;
     p1.right = p1.x + p1.width*.5;
     //exit
-    exit.y = shipHeight;;
+    exit.y = shipHeight;
     exit.vy = 0;
 
     //reset life count
